@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
@@ -43,9 +42,9 @@ type SimplePlaylist struct {
 	// requests to target a specific playlist version.
 	SnapshotID string `json:"snapshot_id"`
 	// A collection to the Web API endpoint where full details of the playlist's
-	// tracks can be retrieved, along with the total number of tracks in the playlist.
-	Tracks PlaylistTracks `json:"tracks"`
-	URI    URI            `json:"uri"`
+	// items can be retrieved, along with the total number of items in the playlist.
+	Items PlaylistTracks `json:"items"`
+	URI   URI            `json:"uri"`
 }
 
 // FullPlaylist provides extra playlist data in addition to the data provided by SimplePlaylist.
@@ -53,7 +52,7 @@ type FullPlaylist struct {
 	SimplePlaylist
 	// Information about the followers of this playlist.
 	Followers Followers         `json:"followers"`
-	Tracks    PlaylistTrackPage `json:"tracks"`
+	Items     PlaylistTrackPage `json:"items"`
 }
 
 // FeaturedPlaylistsOpt gets a list of playlists featured by Spotify.
@@ -77,77 +76,6 @@ func (c *Client) FeaturedPlaylists(ctx context.Context, opts ...RequestOption) (
 	return result.Message, &result.Playlists, nil
 }
 
-// FollowPlaylist adds the current user as a follower of the specified
-// playlist.  Any playlist can be followed, regardless of its private/public
-// status, as long as you know the playlist ID.
-//
-// If the public argument is true, then the playlist will be included in the
-// user's public playlists.  To be able to follow playlists privately, the user
-// must have granted the ScopePlaylistModifyPrivate scope.  The
-// ScopePlaylistModifyPublic scope is required to follow playlists publicly.
-func (c *Client) FollowPlaylist(ctx context.Context, playlist ID, public bool) error {
-	spotifyURL := buildFollowURI(c.baseURL, playlist)
-	body := strings.NewReader(strconv.FormatBool(public))
-	req, err := http.NewRequestWithContext(ctx, "PUT", spotifyURL, body)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	err = c.execute(req, nil)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// UnfollowPlaylist removes the current user as a follower of a playlist.
-// Unfollowing a publicly followed playlist requires ScopePlaylistModifyPublic.
-// Unfolowing a privately followed playlist requies ScopePlaylistModifyPrivate.
-func (c *Client) UnfollowPlaylist(ctx context.Context, playlist ID) error {
-	spotifyURL := buildFollowURI(c.baseURL, playlist)
-	req, err := http.NewRequestWithContext(ctx, "DELETE", spotifyURL, nil)
-	if err != nil {
-		return err
-	}
-	err = c.execute(req, nil)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func buildFollowURI(url string, playlist ID) string {
-	return fmt.Sprintf("%splaylists/%s/followers",
-		url, string(playlist))
-}
-
-// GetPlaylistsForUser gets a list of the playlists owned or followed by a
-// particular Spotify user.
-//
-// Private playlists and collaborative playlists are only retrievable for the
-// current user.  In order to read private playlists, the user must have granted
-// the ScopePlaylistReadPrivate scope.  Note that this scope alone will not
-// return collaborative playlists, even though they are always private.  In
-// order to read collaborative playlists, the user must have granted the
-// ScopePlaylistReadCollaborative scope.
-//
-// Supported options: Limit, Offset
-func (c *Client) GetPlaylistsForUser(ctx context.Context, userID string, opts ...RequestOption) (*SimplePlaylistPage, error) {
-	spotifyURL := c.baseURL + "users/" + userID + "/playlists"
-	if params := processOptions(opts...).urlParams.Encode(); params != "" {
-		spotifyURL += "?" + params
-	}
-
-	var result SimplePlaylistPage
-
-	err := c.get(ctx, spotifyURL, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	return &result, err
-}
-
 // GetPlaylist fetches a playlist from spotify.
 // Supported options: Fields
 func (c *Client) GetPlaylist(ctx context.Context, playlistID ID, opts ...RequestOption) (*FullPlaylist, error) {
@@ -164,33 +92,6 @@ func (c *Client) GetPlaylist(ctx context.Context, playlistID ID, opts ...Request
 	}
 
 	return &playlist, err
-}
-
-// GetPlaylistTracks gets full details of the tracks in a playlist, given the
-// playlist's Spotify ID.
-//
-// Supported options: Limit, Offset, Market, Fields
-//
-// Deprecated: the Spotify api is moving towards supporting both tracks and episodes. Use GetPlaylistItems which
-// supports these.
-func (c *Client) GetPlaylistTracks(
-	ctx context.Context,
-	playlistID ID,
-	opts ...RequestOption,
-) (*PlaylistTrackPage, error) {
-	spotifyURL := fmt.Sprintf("%splaylists/%s/tracks", c.baseURL, playlistID)
-	if params := processOptions(opts...).urlParams.Encode(); params != "" {
-		spotifyURL += "?" + params
-	}
-
-	var result PlaylistTrackPage
-
-	err := c.get(ctx, spotifyURL, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	return &result, err
 }
 
 // PlaylistItem contains info about an item in a playlist.
@@ -264,7 +165,7 @@ type PlaylistItemPage struct {
 //
 // Supported options: Limit, Offset, Market, Fields
 func (c *Client) GetPlaylistItems(ctx context.Context, playlistID ID, opts ...RequestOption) (*PlaylistItemPage, error) {
-	spotifyURL := fmt.Sprintf("%splaylists/%s/tracks", c.baseURL, playlistID)
+	spotifyURL := fmt.Sprintf("%splaylists/%s/items", c.baseURL, playlistID)
 
 	// Add default as the first option so it gets override by url.Values#Set
 	opts = append([]RequestOption{AdditionalTypes(EpisodeAdditionalType, TrackAdditionalType)}, opts...)
@@ -283,17 +184,17 @@ func (c *Client) GetPlaylistItems(ctx context.Context, playlistID ID, opts ...Re
 	return &result, err
 }
 
-// CreatePlaylistForUser creates a playlist for a Spotify user.
-// The playlist will be empty until you add tracks to it.
+// CreatePlaylist creates a playlist for the current user.
+// The playlist will be empty until you add items to it.
 // The playlistName does not need to be unique - a user can have
 // several playlists with the same name.
 //
-// Creating a public playlist for a user requires ScopePlaylistModifyPublic;
+// Creating a public playlist requires ScopePlaylistModifyPublic;
 // creating a private playlist requires ScopePlaylistModifyPrivate.
 //
 // On success, the newly created playlist is returned.
-func (c *Client) CreatePlaylistForUser(ctx context.Context, userID, playlistName, description string, public bool, collaborative bool) (*FullPlaylist, error) {
-	spotifyURL := fmt.Sprintf("%susers/%s/playlists", c.baseURL, userID)
+func (c *Client) CreatePlaylist(ctx context.Context, playlistName, description string, public bool, collaborative bool) (*FullPlaylist, error) {
+	spotifyURL := c.baseURL + "me/playlists"
 	body := struct {
 		Name          string `json:"name"`
 		Public        bool   `json:"public"`
@@ -404,7 +305,7 @@ func (c *Client) AddTracksToPlaylist(ctx context.Context, playlistID ID, trackID
 	m := make(map[string]interface{})
 	m["uris"] = uris
 
-	spotifyURL := fmt.Sprintf("%splaylists/%s/tracks",
+	spotifyURL := fmt.Sprintf("%splaylists/%s/items",
 		c.baseURL, string(playlistID))
 	body, err := json.Marshal(m)
 	if err != nil {
@@ -491,12 +392,12 @@ func (c *Client) removeTracksFromPlaylist(
 	snapshotID string,
 ) (newSnapshotID string, err error) {
 	m := make(map[string]interface{})
-	m["tracks"] = tracks
+	m["items"] = tracks
 	if snapshotID != "" {
 		m["snapshot_id"] = snapshotID
 	}
 
-	spotifyURL := fmt.Sprintf("%splaylists/%s/tracks",
+	spotifyURL := fmt.Sprintf("%splaylists/%s/items",
 		c.baseURL, string(playlistID))
 	body, err := json.Marshal(m)
 	if err != nil {
@@ -535,7 +436,7 @@ func (c *Client) ReplacePlaylistTracks(ctx context.Context, playlistID ID, track
 	for i, u := range trackIDs {
 		trackURIs[i] = fmt.Sprintf("spotify:track:%s", u)
 	}
-	spotifyURL := fmt.Sprintf("%splaylists/%s/tracks?uris=%s",
+	spotifyURL := fmt.Sprintf("%splaylists/%s/items?uris=%s",
 		c.baseURL, playlistID, strings.Join(trackURIs, ","))
 	req, err := http.NewRequestWithContext(ctx, "PUT", spotifyURL, nil)
 	if err != nil {
@@ -568,7 +469,7 @@ func (c *Client) ReplacePlaylistItems(ctx context.Context, playlistID ID, items 
 		return "", err
 	}
 
-	spotifyURL := fmt.Sprintf("%splaylists/%s/tracks", c.baseURL, playlistID)
+	spotifyURL := fmt.Sprintf("%splaylists/%s/items", c.baseURL, playlistID)
 	req, err := http.NewRequestWithContext(ctx, "PUT", spotifyURL, bytes.NewReader(body))
 	if err != nil {
 		return "", err
@@ -585,26 +486,6 @@ func (c *Client) ReplacePlaylistItems(ctx context.Context, playlistID ID, items 
 	}
 
 	return result.SnapshotID, nil
-}
-
-// UserFollowsPlaylist checks if one or more (up to 5) Spotify users are following
-// a Spotify playlist, given the playlist's owner and ID.
-//
-// Checking if a user follows a playlist publicly doesn't require any scopes.
-// Checking if the user is privately following a playlist is only possible for the
-// current user when that user has granted access to the ScopePlaylistReadPrivate scope.
-func (c *Client) UserFollowsPlaylist(ctx context.Context, playlistID ID, userIDs ...string) ([]bool, error) {
-	spotifyURL := fmt.Sprintf("%splaylists/%s/followers/contains?ids=%s",
-		c.baseURL, playlistID, strings.Join(userIDs, ","))
-
-	follows := make([]bool, len(userIDs))
-
-	err := c.get(ctx, spotifyURL, &follows)
-	if err != nil {
-		return nil, err
-	}
-
-	return follows, err
 }
 
 // PlaylistReorderOptions is used with ReorderPlaylistTracks to reorder
@@ -645,7 +526,7 @@ type PlaylistReorderOptions struct {
 // Reordering tracks in the user's private playlists (including collaborative playlists) requires
 // ScopePlaylistModifyPrivate.
 func (c *Client) ReorderPlaylistTracks(ctx context.Context, playlistID ID, opt PlaylistReorderOptions) (snapshotID string, err error) {
-	spotifyURL := fmt.Sprintf("%splaylists/%s/tracks", c.baseURL, playlistID)
+	spotifyURL := fmt.Sprintf("%splaylists/%s/items", c.baseURL, playlistID)
 	j, err := json.Marshal(opt)
 	if err != nil {
 		return "", err

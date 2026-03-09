@@ -87,52 +87,8 @@ func TestFindArtist(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if followers := artist.Followers.Count; followers != 2265279 {
-		t.Errorf("Got %d followers, want 2265279\n", followers)
-	}
 	if artist.Name != "Pitbull" {
 		t.Error("Got ", artist.Name, ", wanted Pitbull")
-	}
-}
-
-func TestArtistTopTracks(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/artist_top_tracks.txt")
-	defer server.Close()
-
-	tracks, err := client.GetArtistsTopTracks(context.Background(), ID("43ZHCT0cAZBISjO8DG9PnE"), "SE")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if l := len(tracks); l != 10 {
-		t.Fatalf("Got %d tracks, expected 10\n", l)
-	}
-	track := tracks[9]
-	if track.Name != "(You're The) Devil in Disguise" {
-		t.Error("Incorrect track name")
-	}
-	if track.TrackNumber != 24 {
-		t.Errorf("Track number was %d, expected 24\n", track.TrackNumber)
-	}
-}
-
-func TestRelatedArtists(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/related_artists.txt")
-	defer server.Close()
-
-	artists, err := client.GetRelatedArtists(context.Background(), ID("43ZHCT0cAZBISjO8DG9PnE"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if count := len(artists); count != 20 {
-		t.Fatalf("Got %d artists, wanted 20\n", count)
-	}
-	a2 := artists[2]
-	if a2.Name != "Carl Perkins" {
-		t.Error("Expected Carl Perkins, got ", a2.Name)
-	}
-	if a2.Popularity != 54 {
-		t.Errorf("Expected popularity 54, got %d\n", a2.Popularity)
 	}
 }
 

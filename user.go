@@ -2,11 +2,6 @@ package spotify
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"net/http"
-	"net/url"
-	"strings"
 )
 
 // User contains the basic, publicly available information about a Spotify user.
@@ -17,8 +12,6 @@ type User struct {
 	DisplayName string `json:"display_name"`
 	// Known public external URLs for the user.
 	ExternalURLs map[string]string `json:"external_urls"`
-	// Information about followers of the user.
-	Followers Followers `json:"followers"`
 	// A link to the Web API endpoint for this user.
 	Endpoint string `json:"href"`
 	// The Spotify user ID for the user.
@@ -33,40 +26,11 @@ type User struct {
 // This data is private and requires user authentication.
 type PrivateUser struct {
 	User
-	// The country of the user, as set in the user's account profile.
-	// An ISO 3166-1 alpha-2 country code.  This field is only available when the
-	// current user has granted access to the ScopeUserReadPrivate scope.
-	Country string `json:"country"`
-	// The user's email address, as entered by the user when creating their account.
-	// Note: this email is UNVERIFIED - there is no proof that it actually
-	// belongs to the user.  This field is only available when the current user
-	// has granted access to the ScopeUserReadEmail scope.
-	Email string `json:"email"`
-	// The user's Spotify subscription level: "premium", "free", etc.
-	// The subscription level "open" can be considered the same as "free".
-	// This field is only available when the current user has granted access to
-	// the ScopeUserReadPrivate scope.
-	Product string `json:"product"`
 	// The user's date of birth, in the format 'YYYY-MM-DD'.  You can use
 	// the DateLayout constant to convert this to a time.Time value.
 	// This field is only available when the current user has granted
 	// access to the ScopeUserReadBirthdate scope.
 	Birthdate string `json:"birthdate"`
-}
-
-// GetUsersPublicProfile gets public profile information about a
-// Spotify User.  It does not require authentication.
-func (c *Client) GetUsersPublicProfile(ctx context.Context, userID ID) (*User, error) {
-	spotifyURL := c.baseURL + "users/" + string(userID)
-
-	var user User
-
-	err := c.get(ctx, spotifyURL, &user)
-	if err != nil {
-		return nil, err
-	}
-
-	return &user, nil
 }
 
 // CurrentUser gets detailed profile information about the
@@ -134,94 +98,6 @@ func (c *Client) CurrentUsersTracks(ctx context.Context, opts ...RequestOption) 
 	}
 
 	return &result, nil
-}
-
-// FollowUser adds the current user as a follower of one or more
-// spotify users, identified by their Spotify IDs.
-//
-// Modifying the lists of artists or users the current user follows
-// requires that the application has the ScopeUserFollowModify scope.
-func (c *Client) FollowUser(ctx context.Context, ids ...ID) error {
-	return c.modifyFollowers(ctx, "user", true, ids...)
-}
-
-// FollowArtist adds the current user as a follower of one or more
-// spotify artists, identified by their Spotify IDs.
-//
-// Modifying the lists of artists or users the current user follows
-// requires that the application has the ScopeUserFollowModify scope.
-func (c *Client) FollowArtist(ctx context.Context, ids ...ID) error {
-	return c.modifyFollowers(ctx, "artist", true, ids...)
-}
-
-// UnfollowUser removes the current user as a follower of one or more
-// Spotify users.
-//
-// Modifying the lists of artists or users the current user follows
-// requires that the application has the ScopeUserFollowModify scope.
-func (c *Client) UnfollowUser(ctx context.Context, ids ...ID) error {
-	return c.modifyFollowers(ctx, "user", false, ids...)
-}
-
-// UnfollowArtist removes the current user as a follower of one or more
-// Spotify artists.
-//
-// Modifying the lists of artists or users the current user follows
-// requires that the application has the ScopeUserFollowModify scope.
-func (c *Client) UnfollowArtist(ctx context.Context, ids ...ID) error {
-	return c.modifyFollowers(ctx, "artist", false, ids...)
-}
-
-// CurrentUserFollows checks to see if the current user is following
-// one or more artists or other Spotify Users.  This call requires
-// ScopeUserFollowRead.
-//
-// The t argument indicates the type of the IDs, and must be either
-// "user" or "artist".
-//
-// The result is returned as a slice of bool values in the same order
-// in which the IDs were specified.
-func (c *Client) CurrentUserFollows(ctx context.Context, t string, ids ...ID) ([]bool, error) {
-	if l := len(ids); l == 0 || l > 50 {
-		return nil, errors.New("spotify: UserFollows supports 1 to 50 IDs")
-	}
-	if t != "artist" && t != "user" {
-		return nil, errors.New("spotify: t must be 'artist' or 'user'")
-	}
-	spotifyURL := fmt.Sprintf("%sme/following/contains?type=%s&ids=%s",
-		c.baseURL, t, strings.Join(toStringSlice(ids), ","))
-
-	var result []bool
-
-	err := c.get(ctx, spotifyURL, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func (c *Client) modifyFollowers(ctx context.Context, usertype string, follow bool, ids ...ID) error {
-	if l := len(ids); l == 0 || l > 50 {
-		return errors.New("spotify: Follow/Unfollow supports 1 to 50 IDs")
-	}
-	v := url.Values{}
-	v.Add("type", usertype)
-	v.Add("ids", strings.Join(toStringSlice(ids), ","))
-	spotifyURL := c.baseURL + "me/following?" + v.Encode()
-	method := "PUT"
-	if !follow {
-		method = "DELETE"
-	}
-	req, err := http.NewRequestWithContext(ctx, method, spotifyURL, nil)
-	if err != nil {
-		return err
-	}
-	err = c.execute(req, nil, http.StatusNoContent)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // CurrentUsersFollowedArtists gets the current user's followed artists.

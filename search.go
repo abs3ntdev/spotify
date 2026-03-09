@@ -68,14 +68,14 @@ type SearchResult struct {
 // search types.  For example, `Search(query, SearchTypeArtist|SearchTypeAlbum)`
 // will search for artists or albums matching the specified keywords.
 //
-// Matching
+// # Matching
 //
 // Matching of search keywords is NOT case sensitive.  Keywords are matched in
 // any order unless surrounded by double quotes. Searching for playlists will
 // return results where the query keyword(s) match any part of the playlist's
 // name or description. Only popular public playlists are returned.
 //
-// Operators
+// # Operators
 //
 // The operator NOT can be used to exclude results.  For example,
 // query = "roadhouse NOT blues" returns items that match "roadhouse" but excludes
@@ -85,14 +85,14 @@ type SearchResult struct {
 //
 // Operators should be specified in uppercase.
 //
-// Wildcards
+// # Wildcards
 //
 // The asterisk (*) character can, with some limitations, be used as a wildcard
 // (maximum of 2 per query).  It will match a variable number of non-white-space
 // characters.  It cannot be used in a quoted phrase, in a field filter, or as
 // the first character of a keyword string.
 //
-// Field filters
+// # Field filters
 //
 // By default, results are returned when a match is found in any field of the
 // target object type.  Searches can be made more specific by specifying an album,
@@ -118,7 +118,7 @@ type SearchResult struct {
 // If the client has a valid access token, then the results will only include
 // content playable in the user's country.
 //
-// Limit, Market and Offset request options are supported
+// Limit (max 10, default 5), Market and Offset request options are supported
 func (c *Client) Search(ctx context.Context, query string, t SearchType, opts ...RequestOption) (*SearchResult, error) {
 	v := processOptions(opts...).urlParams
 	v.Set("q", query)

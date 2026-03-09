@@ -222,7 +222,7 @@ func (c *Client) execute(req *http.Request, result interface{}, needsStatus ...i
 				// If the context is cancelled, return the original error
 			case <-time.After(retryDuration(resp)):
 				continue
-                        }
+			}
 		}
 		if resp.StatusCode == http.StatusNoContent {
 			return nil
@@ -295,29 +295,6 @@ func (c *Client) get(ctx context.Context, url string, result interface{}) error 
 	}
 
 	return nil
-}
-
-// NewReleases gets a list of new album releases featured in Spotify.
-// Supported options: Country, Limit, Offset
-func (c *Client) NewReleases(ctx context.Context, opts ...RequestOption) (albums *SimpleAlbumPage, err error) {
-	spotifyURL := c.baseURL + "browse/new-releases"
-	if params := processOptions(opts...).urlParams.Encode(); params != "" {
-		spotifyURL += "?" + params
-	}
-
-	var objmap map[string]*json.RawMessage
-	err = c.get(ctx, spotifyURL, &objmap)
-	if err != nil {
-		return nil, err
-	}
-
-	var result SimpleAlbumPage
-	err = json.Unmarshal(*objmap["albums"], &result)
-	if err != nil {
-		return nil, err
-	}
-
-	return &result, nil
 }
 
 // Token gets the client's current token.

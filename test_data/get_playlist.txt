@@ -41,8 +41,8 @@
     "primary_color": null,
     "public": true,
     "snapshot_id": "OCw3NGQ1M2Y5NjFiNGE5NmJmYjUxNmJlM2QzMzk2ZDNhYWZmY2NlNTJh",
-    "tracks": {
-        "href": "https://api.spotify.com/v1/playlists/1h9q8vXXDl2vHOmwdsuXms/tracks?offset=0&limit=100&locale=fr-CH,fr;q=0.9,en-GB;q=0.8,en;q=0.7,fr-FR;q=0.6,en-US;q=0.5",
+    "items": {
+        "href": "https://api.spotify.com/v1/playlists/1h9q8vXXDl2vHOmwdsuXms/items?offset=0&limit=100&locale=fr-CH,fr;q=0.9,en-GB;q=0.8,en;q=0.7,fr-FR;q=0.6,en-US;q=0.5",
         "items": [
             {
                 "added_at": "2021-09-09T06:43:33Z",

@@ -2,9 +2,7 @@ package spotify
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -16,11 +14,8 @@ type TrackExternalIDs struct {
 
 // SimpleTrack contains basic info about a track.
 type SimpleTrack struct {
-	Album SimpleAlbum `json:"album"`
+	Album   SimpleAlbum    `json:"album"`
 	Artists []SimpleArtist `json:"artists"`
-	// A list of the countries in which the track can be played,
-	// identified by their ISO 3166-1 alpha-2 codes.
-	AvailableMarkets []string `json:"available_markets"`
 	// The disc number (usually 1 unless the album consists of more than one disc).
 	DiscNumber int `json:"disc_number"`
 	// The length of the track, in milliseconds.
@@ -51,25 +46,6 @@ func (st SimpleTrack) String() string {
 	return fmt.Sprintf("TRACK<[%s] [%s]>", st.ID, st.Name)
 }
 
-// LinkedFromInfo
-// See: https://developer.spotify.com/documentation/general/guides/track-relinking-guide/
-type LinkedFromInfo struct {
-	// ExternalURLs are the known external APIs for this track or album
-	ExternalURLs map[string]string `json:"external_urls"`
-
-	// Href is a link to the Web API endpoint providing full details
-	Href string `json:"href"`
-
-	// ID of the linked track
-	ID ID `json:"id"`
-
-	// Type of the link: album of the track
-	Type string `json:"type"`
-
-	// URI is the Spotify URI of the track/album
-	URI string `json:"uri"`
-}
-
 // FullTrack provides extra track data in addition to what is provided by SimpleTrack.
 type FullTrack struct {
 	SimpleTrack
@@ -77,19 +53,11 @@ type FullTrack struct {
 	Album SimpleAlbum `json:"album"`
 	// Known external IDs for the track.
 	ExternalIDs map[string]string `json:"external_ids"`
-	// Popularity of the track.  The value will be between 0 and 100,
-	// with 100 being the most popular.  The popularity is calculated from
-	// both total plays and most recent plays.
-	Popularity int `json:"popularity"`
 
 	// IsPlayable defines if the track is playable. It's reported when the "market" parameter is passed to the tracks
 	// listing API.
 	// See: https://developer.spotify.com/documentation/general/guides/track-relinking-guide/
 	IsPlayable *bool `json:"is_playable"`
-
-	// LinkedFrom points to the linked track. It's reported when the "market" parameter is passed to the tracks listing
-	// API.
-	LinkedFrom *LinkedFromInfo `json:"linked_from"`
 }
 
 // PlaylistTrack contains info about a track in a playlist.
@@ -144,34 +112,4 @@ func (c *Client) GetTrack(ctx context.Context, id ID, opts ...RequestOption) (*F
 	}
 
 	return &t, nil
-}
-
-// GetTracks gets Spotify catalog information for multiple tracks based on their
-// Spotify IDs.  It supports up to 50 tracks in a single call.  Tracks are
-// returned in the order requested.  If a track is not found, that position in the
-// result will be nil.  Duplicate ids in the query will result in duplicate
-// tracks in the result.
-//
-// API Doc: https://developer.spotify.com/documentation/web-api/reference/tracks/get-several-tracks/
-//
-// Supported options: Market
-func (c *Client) GetTracks(ctx context.Context, ids []ID, opts ...RequestOption) ([]*FullTrack, error) {
-	if len(ids) > 50 {
-		return nil, errors.New("spotify: FindTracks supports up to 50 tracks")
-	}
-
-	params := processOptions(opts...).urlParams
-	params.Set("ids", strings.Join(toStringSlice(ids), ","))
-	spotifyURL := c.baseURL + "tracks?" + params.Encode()
-
-	var t struct {
-		Tracks []*FullTrack `json:"tracks"`
-	}
-
-	err := c.get(ctx, spotifyURL, &t)
-	if err != nil {
-		return nil, err
-	}
-
-	return t.Tracks, nil
 }

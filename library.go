@@ -3,28 +3,60 @@ package spotify
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 )
 
-// UserHasTracks checks if one or more tracks are saved to the current user's
-// "Your Music" library.
-func (c *Client) UserHasTracks(ctx context.Context, ids ...ID) ([]bool, error) {
-	return c.libraryContains(ctx, "tracks", ids...)
-}
-
-// UserHasAlbums checks if one or more albums are saved to the current user's
-// "Your Albums" library.
-func (c *Client) UserHasAlbums(ctx context.Context, ids ...ID) ([]bool, error) {
-	return c.libraryContains(ctx, "albums", ids...)
-}
-
-func (c *Client) libraryContains(ctx context.Context, typ string, ids ...ID) ([]bool, error) {
-	if l := len(ids); l == 0 || l > 50 {
-		return nil, errors.New("spotify: supports 1 to 50 IDs per call")
+func toURISlice(uris []URI) []string {
+	result := make([]string, len(uris))
+	for i, u := range uris {
+		result[i] = string(u)
 	}
-	spotifyURL := fmt.Sprintf("%sme/%s/contains?ids=%s", c.baseURL, typ, strings.Join(toStringSlice(ids), ","))
+	return result
+}
+
+// SaveToLibrary saves one or more items to the current user's library.
+// Items are identified by their Spotify URIs (e.g. "spotify:track:4iV5W9uYEdYUVa79Axb7Rh").
+// A maximum of 40 URIs can be sent per request.
+// This call requires the ScopeUserLibraryModify scope.
+func (c *Client) SaveToLibrary(ctx context.Context, uris ...URI) error {
+	if l := len(uris); l == 0 || l > 40 {
+		return errors.New("spotify: this call supports 1 to 40 URIs per call")
+	}
+	spotifyURL := c.baseURL + "me/library?uris=" + strings.Join(toURISlice(uris), ",")
+	req, err := http.NewRequestWithContext(ctx, "PUT", spotifyURL, nil)
+	if err != nil {
+		return err
+	}
+	return c.execute(req, nil)
+}
+
+// RemoveFromLibrary removes one or more items from the current user's library.
+// Items are identified by their Spotify URIs (e.g. "spotify:track:4iV5W9uYEdYUVa79Axb7Rh").
+// A maximum of 40 URIs can be sent per request.
+// This call requires the ScopeUserLibraryModify scope.
+func (c *Client) RemoveFromLibrary(ctx context.Context, uris ...URI) error {
+	if l := len(uris); l == 0 || l > 40 {
+		return errors.New("spotify: this call supports 1 to 40 URIs per call")
+	}
+	spotifyURL := c.baseURL + "me/library?uris=" + strings.Join(toURISlice(uris), ",")
+	req, err := http.NewRequestWithContext(ctx, "DELETE", spotifyURL, nil)
+	if err != nil {
+		return err
+	}
+	return c.execute(req, nil)
+}
+
+// LibraryContains checks if one or more items are saved in the current user's library.
+// Items are identified by their Spotify URIs (e.g. "spotify:track:4iV5W9uYEdYUVa79Axb7Rh").
+// A maximum of 40 URIs can be sent per request.
+// The result is returned as a slice of bool values in the same order
+// in which the URIs were specified.
+func (c *Client) LibraryContains(ctx context.Context, uris ...URI) ([]bool, error) {
+	if l := len(uris); l == 0 || l > 40 {
+		return nil, errors.New("spotify: this call supports 1 to 40 URIs per call")
+	}
+	spotifyURL := c.baseURL + "me/library/contains?uris=" + strings.Join(toURISlice(uris), ",")
 
 	var result []bool
 
@@ -33,55 +65,5 @@ func (c *Client) libraryContains(ctx context.Context, typ string, ids ...ID) ([]
 		return nil, err
 	}
 
-	return result, err
-}
-
-// AddTracksToLibrary saves one or more tracks to the current user's
-// "Your Music" library.  This call requires the ScopeUserLibraryModify scope.
-// A track can only be saved once; duplicate IDs are ignored.
-func (c *Client) AddTracksToLibrary(ctx context.Context, ids ...ID) error {
-	return c.modifyLibrary(ctx, "tracks", true, ids...)
-}
-
-// RemoveTracksFromLibrary removes one or more tracks from the current user's
-// "Your Music" library.  This call requires the ScopeUserModifyLibrary scope.
-// Trying to remove a track when you do not have the user's authorization
-// results in a `spotify.Error` with the status code set to http.StatusUnauthorized.
-func (c *Client) RemoveTracksFromLibrary(ctx context.Context, ids ...ID) error {
-	return c.modifyLibrary(ctx, "tracks", false, ids...)
-}
-
-// AddAlbumsToLibrary saves one or more albums to the current user's
-// "Your Albums" library.  This call requires the ScopeUserLibraryModify scope.
-// A track can only be saved once; duplicate IDs are ignored.
-func (c *Client) AddAlbumsToLibrary(ctx context.Context, ids ...ID) error {
-	return c.modifyLibrary(ctx, "albums", true, ids...)
-}
-
-// RemoveAlbumsFromLibrary removes one or more albums from the current user's
-// "Your Albums" library.  This call requires the ScopeUserModifyLibrary scope.
-// Trying to remove a track when you do not have the user's authorization
-// results in a `spotify.Error` with the status code set to http.StatusUnauthorized.
-func (c *Client) RemoveAlbumsFromLibrary(ctx context.Context, ids ...ID) error {
-	return c.modifyLibrary(ctx, "albums", false, ids...)
-}
-
-func (c *Client) modifyLibrary(ctx context.Context, typ string, add bool, ids ...ID) error {
-	if l := len(ids); l == 0 || l > 50 {
-		return errors.New("spotify: this call supports 1 to 50 IDs per call")
-	}
-	spotifyURL := fmt.Sprintf("%sme/%s?ids=%s", c.baseURL, typ, strings.Join(toStringSlice(ids), ","))
-	method := "DELETE"
-	if add {
-		method = "PUT"
-	}
-	req, err := http.NewRequestWithContext(ctx, method, spotifyURL, nil)
-	if err != nil {
-		return err
-	}
-	err = c.execute(req, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	return result, nil
 }
