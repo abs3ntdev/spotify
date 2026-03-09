@@ -2,14 +2,14 @@ package spotify
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"testing"
 )
 
 // The example from https://developer.spotify.com/web-api/get-album/
 func TestFindAlbum(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/find_album.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/find_album.txt")
 
 	album, err := client.GetAlbum(context.Background(), ID("0sNOF9WDwhWunNAHPD3Baj"))
 	if err != nil {
@@ -28,15 +28,14 @@ func TestFindAlbum(t *testing.T) {
 }
 
 func TestFindAlbumBadID(t *testing.T) {
-	client, server := testClientString(http.StatusNotFound, `{ "error": { "status": 404, "message": "non existing id" } }`)
-	defer server.Close()
+	client := testClientString(t, http.StatusNotFound, `{ "error": { "status": 404, "message": "non existing id" } }`)
 
 	album, err := client.GetAlbum(context.Background(), ID("asdf"))
 	if album != nil {
 		t.Fatal("Expected nil album, got", album.Name)
 	}
-	se, ok := err.(Error)
-	if !ok {
+	var se Error
+	if !errors.As(err, &se) {
 		t.Error("Expected spotify error, got", err)
 	}
 	if se.Status != 404 {
@@ -48,8 +47,7 @@ func TestFindAlbumBadID(t *testing.T) {
 }
 
 func TestFindAlbumTracks(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/find_album_tracks.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/find_album_tracks.txt")
 
 	res, err := client.GetAlbumTracks(context.Background(), ID("0sNOF9WDwhWunNAHPD3Baj"), Limit(1))
 	if err != nil {

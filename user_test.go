@@ -21,8 +21,7 @@ func TestCurrentUser(t *testing.T) {
 		"uri" : "spotify:user:username",
 		"birthdate" : "1985-05-01"
 	}`
-	client, server := testClientString(http.StatusOK, json)
-	defer server.Close()
+	client := testClientString(t, http.StatusOK, json)
 
 	me, err := client.CurrentUser(context.Background())
 	if err != nil {
@@ -38,8 +37,7 @@ func TestCurrentUser(t *testing.T) {
 }
 
 func TestCurrentUsersTracks(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/current_users_tracks.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/current_users_tracks.txt")
 
 	tracks, err := client.CurrentUsersTracks(context.Background())
 	if err != nil {
@@ -68,8 +66,7 @@ func TestCurrentUsersTracks(t *testing.T) {
 }
 
 func TestCurrentUsersAlbums(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/current_users_albums.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/current_users_albums.txt")
 
 	albums, err := client.CurrentUsersAlbums(context.Background())
 	if err != nil {
@@ -107,8 +104,7 @@ func TestCurrentUsersAlbums(t *testing.T) {
 }
 
 func TestCurrentUsersPlaylists(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/current_users_playlists.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/current_users_playlists.txt")
 
 	playlists, err := client.CurrentUsersPlaylists(context.Background())
 	if err != nil {
@@ -195,8 +191,7 @@ func TestUsersFollowedArtists(t *testing.T) {
    "href" : "https://api.spotify.com/v1/users/thelinmichael/following?type=artist&limit=20"
   }
 }`
-	client, server := testClientString(http.StatusOK, json)
-	defer server.Close()
+	client := testClientString(t, http.StatusOK, json)
 
 	artists, err := client.CurrentUsersFollowedArtists(context.Background())
 	if err != nil {
@@ -218,12 +213,11 @@ func TestUsersFollowedArtists(t *testing.T) {
 }
 
 func TestCurrentUsersFollowedArtistsOpt(t *testing.T) {
-	client, server := testClientString(http.StatusOK, "{}", func(req *http.Request) {
+	client := testClientString(t, http.StatusOK, "{}", func(req *http.Request) {
 		if url := req.URL.String(); !strings.HasSuffix(url, "me/following?after=0aV6DOiouImYTqrR5YlIqx&limit=50&type=artist") {
 			t.Error("invalid request url")
 		}
 	})
-	defer server.Close()
 
 	_, err := client.CurrentUsersFollowedArtists(context.Background(), Limit(50), After("0aV6DOiouImYTqrR5YlIqx"))
 	if err != nil {
@@ -232,8 +226,7 @@ func TestCurrentUsersFollowedArtistsOpt(t *testing.T) {
 }
 
 func TestCurrentUsersTopArtists(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/current_users_top_artists.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/current_users_top_artists.txt")
 
 	artists, err := client.CurrentUsersTopArtists(context.Background())
 	if err != nil {
@@ -261,8 +254,7 @@ func TestCurrentUsersTopArtists(t *testing.T) {
 }
 
 func TestCurrentUsersTopTracks(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/current_users_top_tracks.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/current_users_top_tracks.txt")
 
 	tracks, err := client.CurrentUsersTopTracks(context.Background())
 	if err != nil {

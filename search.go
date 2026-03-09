@@ -22,12 +22,12 @@ type SearchType int
 // that can be bitwise OR'd together to search for multiple types of content
 // simultaneously.
 const (
-	SearchTypeAlbum    SearchType = 1 << iota
-	SearchTypeArtist              = 1 << iota
-	SearchTypePlaylist            = 1 << iota
-	SearchTypeTrack               = 1 << iota
-	SearchTypeShow                = 1 << iota
-	SearchTypeEpisode             = 1 << iota
+	SearchTypeAlbum SearchType = 1 << iota
+	SearchTypeArtist
+	SearchTypePlaylist
+	SearchTypeTrack
+	SearchTypeShow
+	SearchTypeEpisode
 )
 
 func (st SearchType) encode() string {
@@ -136,101 +136,110 @@ func (c *Client) Search(ctx context.Context, query string, t SearchType, opts ..
 		return nil, err
 	}
 
-	return &result, err
+	return &result, nil
+}
+
+// fetchSearchPage is a helper that loads a search result page from the given URL.
+// It returns [ErrNoMorePages] if the URL is empty.
+func (c *Client) fetchSearchPage(ctx context.Context, pageURL string, s *SearchResult) error {
+	if pageURL == "" {
+		return ErrNoMorePages
+	}
+	return c.get(ctx, pageURL, s)
 }
 
 // NextArtistResults loads the next page of artists into the specified search result.
 func (c *Client) NextArtistResults(ctx context.Context, s *SearchResult) error {
-	if s.Artists == nil || s.Artists.Next == "" {
+	if s.Artists == nil {
 		return ErrNoMorePages
 	}
-	return c.get(ctx, s.Artists.Next, s)
+	return c.fetchSearchPage(ctx, s.Artists.Next, s)
 }
 
 // PreviousArtistResults loads the previous page of artists into the specified search result.
 func (c *Client) PreviousArtistResults(ctx context.Context, s *SearchResult) error {
-	if s.Artists == nil || s.Artists.Previous == "" {
+	if s.Artists == nil {
 		return ErrNoMorePages
 	}
-	return c.get(ctx, s.Artists.Previous, s)
+	return c.fetchSearchPage(ctx, s.Artists.Previous, s)
 }
 
 // NextAlbumResults loads the next page of albums into the specified search result.
 func (c *Client) NextAlbumResults(ctx context.Context, s *SearchResult) error {
-	if s.Albums == nil || s.Albums.Next == "" {
+	if s.Albums == nil {
 		return ErrNoMorePages
 	}
-	return c.get(ctx, s.Albums.Next, s)
+	return c.fetchSearchPage(ctx, s.Albums.Next, s)
 }
 
 // PreviousAlbumResults loads the previous page of albums into the specified search result.
 func (c *Client) PreviousAlbumResults(ctx context.Context, s *SearchResult) error {
-	if s.Albums == nil || s.Albums.Previous == "" {
+	if s.Albums == nil {
 		return ErrNoMorePages
 	}
-	return c.get(ctx, s.Albums.Previous, s)
+	return c.fetchSearchPage(ctx, s.Albums.Previous, s)
 }
 
 // NextPlaylistResults loads the next page of playlists into the specified search result.
 func (c *Client) NextPlaylistResults(ctx context.Context, s *SearchResult) error {
-	if s.Playlists == nil || s.Playlists.Next == "" {
+	if s.Playlists == nil {
 		return ErrNoMorePages
 	}
-	return c.get(ctx, s.Playlists.Next, s)
+	return c.fetchSearchPage(ctx, s.Playlists.Next, s)
 }
 
 // PreviousPlaylistResults loads the previous page of playlists into the specified search result.
 func (c *Client) PreviousPlaylistResults(ctx context.Context, s *SearchResult) error {
-	if s.Playlists == nil || s.Playlists.Previous == "" {
+	if s.Playlists == nil {
 		return ErrNoMorePages
 	}
-	return c.get(ctx, s.Playlists.Previous, s)
-}
-
-// PreviousTrackResults loads the previous page of tracks into the specified search result.
-func (c *Client) PreviousTrackResults(ctx context.Context, s *SearchResult) error {
-	if s.Tracks == nil || s.Tracks.Previous == "" {
-		return ErrNoMorePages
-	}
-	return c.get(ctx, s.Tracks.Previous, s)
+	return c.fetchSearchPage(ctx, s.Playlists.Previous, s)
 }
 
 // NextTrackResults loads the next page of tracks into the specified search result.
 func (c *Client) NextTrackResults(ctx context.Context, s *SearchResult) error {
-	if s.Tracks == nil || s.Tracks.Next == "" {
+	if s.Tracks == nil {
 		return ErrNoMorePages
 	}
-	return c.get(ctx, s.Tracks.Next, s)
+	return c.fetchSearchPage(ctx, s.Tracks.Next, s)
 }
 
-// PreviousShowResults loads the previous page of shows into the specified search result.
-func (c *Client) PreviousShowResults(ctx context.Context, s *SearchResult) error {
-	if s.Shows == nil || s.Shows.Previous == "" {
+// PreviousTrackResults loads the previous page of tracks into the specified search result.
+func (c *Client) PreviousTrackResults(ctx context.Context, s *SearchResult) error {
+	if s.Tracks == nil {
 		return ErrNoMorePages
 	}
-	return c.get(ctx, s.Shows.Previous, s)
+	return c.fetchSearchPage(ctx, s.Tracks.Previous, s)
 }
 
 // NextShowResults loads the next page of shows into the specified search result.
 func (c *Client) NextShowResults(ctx context.Context, s *SearchResult) error {
-	if s.Shows == nil || s.Shows.Next == "" {
+	if s.Shows == nil {
 		return ErrNoMorePages
 	}
-	return c.get(ctx, s.Shows.Next, s)
+	return c.fetchSearchPage(ctx, s.Shows.Next, s)
 }
 
-// PreviousEpisodeResults loads the previous page of episodes into the specified search result.
-func (c *Client) PreviousEpisodeResults(ctx context.Context, s *SearchResult) error {
-	if s.Episodes == nil || s.Episodes.Previous == "" {
+// PreviousShowResults loads the previous page of shows into the specified search result.
+func (c *Client) PreviousShowResults(ctx context.Context, s *SearchResult) error {
+	if s.Shows == nil {
 		return ErrNoMorePages
 	}
-	return c.get(ctx, s.Episodes.Previous, s)
+	return c.fetchSearchPage(ctx, s.Shows.Previous, s)
 }
 
 // NextEpisodeResults loads the next page of episodes into the specified search result.
 func (c *Client) NextEpisodeResults(ctx context.Context, s *SearchResult) error {
-	if s.Episodes == nil || s.Episodes.Next == "" {
+	if s.Episodes == nil {
 		return ErrNoMorePages
 	}
-	return c.get(ctx, s.Episodes.Next, s)
+	return c.fetchSearchPage(ctx, s.Episodes.Next, s)
+}
+
+// PreviousEpisodeResults loads the previous page of episodes into the specified search result.
+func (c *Client) PreviousEpisodeResults(ctx context.Context, s *SearchResult) error {
+	if s.Episodes == nil {
+		return ErrNoMorePages
+	}
+	return c.fetchSearchPage(ctx, s.Episodes.Previous, s)
 }

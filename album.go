@@ -3,7 +3,6 @@ package spotify
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -49,18 +48,7 @@ type SimpleAlbum struct {
 // [SimpleAlbum.ReleaseDatePrecision] is "month", then only the month and year
 // (but not the day) of the result are valid.
 func (s *SimpleAlbum) ReleaseDateTime() time.Time {
-	if s.ReleaseDatePrecision == "day" {
-		result, _ := time.Parse(DateLayout, s.ReleaseDate)
-		return result
-	}
-	if s.ReleaseDatePrecision == "month" {
-		ym := strings.Split(s.ReleaseDate, "-")
-		year, _ := strconv.Atoi(ym[0])
-		month, _ := strconv.Atoi(ym[1])
-		return time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
-	}
-	year, _ := strconv.Atoi(s.ReleaseDate)
-	return time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
+	return parseReleaseDate(s.ReleaseDate, s.ReleaseDatePrecision)
 }
 
 // Copyright contains the copyright statement associated with an album.

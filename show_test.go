@@ -7,14 +7,13 @@ import (
 )
 
 func TestGetShow(t *testing.T) {
-	c, s := testClientFile(http.StatusOK, "test_data/get_show.txt")
-	defer s.Close()
+	c := testClientFile(t, http.StatusOK, "test_data/get_show.txt")
 
 	r, err := c.GetShow(context.Background(), "1234")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if r.SimpleShow.Name != "Uncommon Core" {
+	if r.Name != "Uncommon Core" {
 		t.Error("Invalid data:", r.Name)
 	}
 	if len(r.Episodes.Episodes) != 25 {
@@ -23,8 +22,7 @@ func TestGetShow(t *testing.T) {
 }
 
 func TestGetShowEpisodes(t *testing.T) {
-	c, s := testClientFile(http.StatusOK, "test_data/get_show_episodes.txt")
-	defer s.Close()
+	c := testClientFile(t, http.StatusOK, "test_data/get_show_episodes.txt")
 
 	r, err := c.GetShowEpisodes(context.Background(), "1234")
 	if err != nil {
@@ -42,8 +40,7 @@ func TestGetShowEpisodes(t *testing.T) {
 }
 
 func TestGetEpisode(t *testing.T) {
-	c, s := testClientFile(http.StatusOK, "test_data/get_episode.txt")
-	defer s.Close()
+	c := testClientFile(t, http.StatusOK, "test_data/get_episode.txt")
 
 	id := "2DSKnz9Hqm1tKimcXqcMJD"
 	r, err := c.GetEpisode(context.Background(), id)

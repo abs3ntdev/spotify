@@ -2,8 +2,6 @@ package spotify
 
 import (
 	"context"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -152,18 +150,7 @@ type ResumePointObject struct {
 // [EpisodePage.ReleaseDatePrecision] is "month", then only the month and year
 // (but not the day) of the result are valid.
 func (e *EpisodePage) ReleaseDateTime() time.Time {
-	if e.ReleaseDatePrecision == "day" {
-		result, _ := time.Parse(DateLayout, e.ReleaseDate)
-		return result
-	}
-	if e.ReleaseDatePrecision == "month" {
-		ym := strings.Split(e.ReleaseDate, "-")
-		year, _ := strconv.Atoi(ym[0])
-		month, _ := strconv.Atoi(ym[1])
-		return time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
-	}
-	year, _ := strconv.Atoi(e.ReleaseDate)
-	return time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
+	return parseReleaseDate(e.ReleaseDate, e.ReleaseDatePrecision)
 }
 
 // GetShow retrieves information about a [specific show].

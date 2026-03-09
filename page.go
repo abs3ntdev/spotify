@@ -3,7 +3,6 @@ package spotify
 import (
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 )
 
@@ -111,7 +110,7 @@ func (b *basePage) canPage() {}
 // It returns [ErrNoMorePages] if p already contains the last page.
 func (c *Client) NextPage(ctx context.Context, p pageable) error {
 	if p == nil || reflect.ValueOf(p).IsNil() {
-		return fmt.Errorf("spotify: p must be a non-nil pointer to a page")
+		return errors.New("spotify: p must be a non-nil pointer to a page")
 	}
 
 	val := reflect.ValueOf(p).Elem()
@@ -135,7 +134,7 @@ func (c *Client) NextPage(ctx context.Context, p pageable) error {
 // It returns [ErrNoMorePages] if p already contains the last page.
 func (c *Client) PreviousPage(ctx context.Context, p pageable) error {
 	if p == nil || reflect.ValueOf(p).IsNil() {
-		return fmt.Errorf("spotify: p must be a non-nil pointer to a page")
+		return errors.New("spotify: p must be a non-nil pointer to a page")
 	}
 
 	val := reflect.ValueOf(p).Elem()

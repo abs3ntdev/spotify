@@ -8,8 +8,7 @@ import (
 
 func TestGetRecommendations(t *testing.T) {
 	// test data corresponding to Spotify Console web API sample
-	client, server := testClientFile(200, "test_data/recommendations.txt")
-	defer server.Close()
+	client := testClientFile(t, 200, "test_data/recommendations.txt")
 
 	seeds := Seeds{
 		Artists: []ID{"4NHQUGzhtTLFvgF5SZesLK"},

@@ -2,7 +2,7 @@
 Spotify
 =======
 
-[![GoDoc](https://godoc.org/github.com/zmb3/spotify?status.svg)](http://godoc.org/github.com/zmb3/spotify)
+[![GoDoc](https://pkg.go.dev/badge/github.com/abs3ntdev/spotify/v2.svg)](https://pkg.go.dev/github.com/abs3ntdev/spotify/v2)
 
 This is a Go wrapper for working with Spotify's
 [Web API](https://developer.spotify.com/web-api/).

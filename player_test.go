@@ -7,8 +7,7 @@ import (
 )
 
 func TestTransferPlaybackDeviceUnavailable(t *testing.T) {
-	client, server := testClientString(http.StatusNotFound, "")
-	defer server.Close()
+	client := testClientString(t, http.StatusNotFound, "")
 	err := client.TransferPlayback(context.Background(), "newdevice", false)
 	if err == nil {
 		t.Error("expected error since auto retry is disabled")
@@ -16,8 +15,7 @@ func TestTransferPlaybackDeviceUnavailable(t *testing.T) {
 }
 
 func TestTransferPlayback(t *testing.T) {
-	client, server := testClientString(http.StatusNoContent, "")
-	defer server.Close()
+	client := testClientString(t, http.StatusNoContent, "")
 
 	err := client.TransferPlayback(context.Background(), "newdevice", true)
 	if err != nil {
@@ -26,8 +24,7 @@ func TestTransferPlayback(t *testing.T) {
 }
 
 func TestVolume(t *testing.T) {
-	client, server := testClientString(http.StatusNoContent, "")
-	defer server.Close()
+	client := testClientString(t, http.StatusNoContent, "")
 
 	err := client.Volume(context.Background(), 50)
 	if err != nil {
@@ -36,8 +33,7 @@ func TestVolume(t *testing.T) {
 }
 
 func TestQueue(t *testing.T) {
-	client, server := testClientString(http.StatusNoContent, "")
-	defer server.Close()
+	client := testClientString(t, http.StatusNoContent, "")
 
 	err := client.QueueSong(context.Background(), "4JpKVNYnVcJ8tuMKjAj50A")
 	if err != nil {
@@ -46,8 +42,7 @@ func TestQueue(t *testing.T) {
 }
 
 func TestPlayerDevices(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/player_available_devices.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/player_available_devices.txt")
 
 	list, err := client.PlayerDevices(context.Background())
 	if err != nil {
@@ -67,8 +62,7 @@ func TestPlayerDevices(t *testing.T) {
 }
 
 func TestPlayerState(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/player_state.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/player_state.txt")
 
 	state, err := client.PlayerState(context.Background())
 	if err != nil {
@@ -98,8 +92,7 @@ func TestPlayerState(t *testing.T) {
 }
 
 func TestPlayerCurrentlyPlaying(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/player_currently_playing.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/player_currently_playing.txt")
 
 	state, err := client.PlayerCurrentlyPlaying(context.Background())
 	if err != nil {
@@ -129,8 +122,7 @@ func TestPlayerCurrentlyPlaying(t *testing.T) {
 }
 
 func TestPlayerRecentlyPlayed(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/player_recently_played.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/player_recently_played.txt")
 
 	items, err := client.PlayerRecentlyPlayed(context.Background())
 	if err != nil {
@@ -163,8 +155,7 @@ func TestPlayArgsError(t *testing.T) {
 			"message" : "Only one of either \"context_uri\" or \"uris\" can be specified"
 		}
 	}`
-	client, server := testClientString(http.StatusUnauthorized, json)
-	defer server.Close()
+	client := testClientString(t, http.StatusUnauthorized, json)
 
 	err := client.Play(context.Background())
 	if err == nil {
@@ -173,8 +164,7 @@ func TestPlayArgsError(t *testing.T) {
 }
 
 func TestGetQueue(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/get_queue.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/get_queue.txt")
 
 	queue, err := client.GetQueue(context.Background())
 	if err != nil {

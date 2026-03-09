@@ -8,8 +8,7 @@ import (
 )
 
 func TestLibraryContains(t *testing.T) {
-	client, server := testClientString(http.StatusOK, `[ false, true ]`)
-	defer server.Close()
+	client := testClientString(t, http.StatusOK, `[ false, true ]`)
 
 	contains, err := client.LibraryContains(context.Background(), "spotify:track:0udZHhCi7p1YzMlvI4fXoK", "spotify:track:55nlbqqFVnSsArIeYSQlqx")
 	if err != nil {
@@ -24,8 +23,7 @@ func TestLibraryContains(t *testing.T) {
 }
 
 func TestSaveToLibrary(t *testing.T) {
-	client, server := testClientString(http.StatusOK, "")
-	defer server.Close()
+	client := testClientString(t, http.StatusOK, "")
 
 	err := client.SaveToLibrary(context.Background(), "spotify:track:4iV5W9uYEdYUVa79Axb7Rh", "spotify:track:1301WleyT98MSxVHPZCA6M")
 	if err != nil {
@@ -34,14 +32,13 @@ func TestSaveToLibrary(t *testing.T) {
 }
 
 func TestSaveToLibraryFailure(t *testing.T) {
-	client, server := testClientString(http.StatusUnauthorized, `
+	client := testClientString(t, http.StatusUnauthorized, `
 {
   "error": {
     "status": 401,
     "message": "Invalid access token"
   }
 }`)
-	defer server.Close()
 	err := client.SaveToLibrary(context.Background(), "spotify:track:4iV5W9uYEdYUVa79Axb7Rh", "spotify:track:1301WleyT98MSxVHPZCA6M")
 	if err == nil {
 		t.Error("Expected error and didn't get one")
@@ -49,8 +46,7 @@ func TestSaveToLibraryFailure(t *testing.T) {
 }
 
 func TestSaveToLibraryWithContextCancelled(t *testing.T) {
-	client, server := testClientString(http.StatusOK, ``)
-	defer server.Close()
+	client := testClientString(t, http.StatusOK, ``)
 
 	ctx, done := context.WithCancel(context.Background())
 	done()
@@ -62,8 +58,7 @@ func TestSaveToLibraryWithContextCancelled(t *testing.T) {
 }
 
 func TestRemoveFromLibrary(t *testing.T) {
-	client, server := testClientString(http.StatusOK, "")
-	defer server.Close()
+	client := testClientString(t, http.StatusOK, "")
 
 	err := client.RemoveFromLibrary(context.Background(), "spotify:track:4iV5W9uYEdYUVa79Axb7Rh", "spotify:track:1301WleyT98MSxVHPZCA6M")
 	if err != nil {

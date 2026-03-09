@@ -36,15 +36,8 @@ type PrivateUser struct {
 // CurrentUser gets detailed profile information about the
 // [current user].
 //
-// Reading the user's email address requires that the application
-// has the [ScopeUserReadEmail] scope.  Reading the country, display
-// name, profile images, and product subscription level requires
+// Reading the display name and profile images requires
 // that the application has the [ScopeUserReadPrivate] scope.
-//
-// Warning: The email address in the response will be the address
-// that was entered when the user created their spotify account.
-// This email address is unverified - do not assume that Spotify has
-// checked that the email address actually belongs to the user.
 //
 // [current user]: https://developer.spotify.com/documentation/web-api/reference/get-current-users-profile
 func (c *Client) CurrentUser(ctx context.Context) (*PrivateUser, error) {

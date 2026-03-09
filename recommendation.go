@@ -2,6 +2,7 @@ package spotify
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -82,7 +83,7 @@ func (c *Client) GetRecommendations(ctx context.Context, seeds Seeds, trackAttri
 	v := processOptions(opts...).urlParams
 
 	if seeds.count() == 0 {
-		return nil, fmt.Errorf("spotify: at least one seed is required")
+		return nil, errors.New("spotify: at least one seed is required")
 	}
 	if seeds.count() > MaxNumberOfSeeds {
 		return nil, fmt.Errorf("spotify: exceeded maximum of %d seeds", MaxNumberOfSeeds)
@@ -99,7 +100,7 @@ func (c *Client) GetRecommendations(ctx context.Context, seeds Seeds, trackAttri
 		return nil, err
 	}
 
-	return &recommendations, err
+	return &recommendations, nil
 }
 
 // GetAvailableGenreSeeds retrieves a [list of available genres] seed parameter

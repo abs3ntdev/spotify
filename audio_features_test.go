@@ -70,8 +70,7 @@ var response = `
 `
 
 func TestAudioFeatures(t *testing.T) {
-	c, s := testClientString(http.StatusOK, response)
-	defer s.Close()
+	c := testClientString(t, http.StatusOK, response)
 
 	ids := []ID{
 		"4JpKVNYnVcJ8tuMKjAj50A",

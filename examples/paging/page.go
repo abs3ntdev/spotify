@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"os"
 
@@ -44,7 +45,7 @@ func main() {
 	for page := 1; ; page++ {
 		log.Printf("  Page %d has %d tracks", page, len(tracks.Items))
 		err = client.NextPage(ctx, tracks)
-		if err == spotify.ErrNoMorePages {
+		if errors.Is(err, spotify.ErrNoMorePages) {
 			break
 		}
 		if err != nil {

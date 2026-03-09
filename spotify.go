@@ -10,7 +10,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -31,6 +33,23 @@ const (
 	// be told to retry but not be given a wait-interval.
 	defaultRetryDuration = time.Second * 5
 )
+
+// parseReleaseDate converts a Spotify release date string to a [time.Time]
+// based on the given precision ("day", "month", or "year").
+func parseReleaseDate(date, precision string) time.Time {
+	if precision == "day" {
+		result, _ := time.Parse(DateLayout, date)
+		return result
+	}
+	if precision == "month" {
+		ym := strings.Split(date, "-")
+		year, _ := strconv.Atoi(ym[0])
+		month, _ := strconv.Atoi(ym[1])
+		return time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	}
+	year, _ := strconv.Atoi(date)
+	return time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
+}
 
 // Client is a client for working with the Spotify Web API.
 // It is best to create this using spotify.New()
@@ -133,10 +152,10 @@ func (i Image) Download(dst io.Writer) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	// TODO: get Content-Type from header?
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("Couldn't download image - HTTP" + strconv.Itoa(resp.StatusCode))
+		return fmt.Errorf("spotify: couldn't download image - HTTP %d", resp.StatusCode)
 	}
 	_, err = io.Copy(dst, resp.Body)
 	return err
@@ -225,18 +244,13 @@ func shouldRetry(status int) bool {
 
 // isFailure determines whether the code indicates failure
 func isFailure(code int, validCodes []int) bool {
-	for _, item := range validCodes {
-		if item == code {
-			return false
-		}
-	}
-	return true
+	return !slices.Contains(validCodes, code)
 }
 
 // `execute` executes a non-GET request. `needsStatus` describes other HTTP
 // status codes that will be treated as success. Note that we allow all 200s
 // even if there are additional success codes that represent success.
-func (c *Client) execute(req *http.Request, result interface{}, needsStatus ...int) error {
+func (c *Client) execute(req *http.Request, result any, needsStatus ...int) error {
 	if c.acceptLanguage != "" {
 		req.Header.Set("Accept-Language", c.acceptLanguage)
 	}
@@ -245,7 +259,7 @@ func (c *Client) execute(req *http.Request, result interface{}, needsStatus ...i
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		if c.autoRetry &&
 			isFailure(resp.StatusCode, needsStatus) &&
@@ -288,7 +302,7 @@ func retryDuration(resp *http.Response) time.Duration {
 	return time.Duration(seconds) * time.Second
 }
 
-func (c *Client) get(ctx context.Context, url string, result interface{}) error {
+func (c *Client) get(ctx context.Context, url string, result any) error {
 	for {
 		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 		if c.acceptLanguage != "" {
@@ -302,7 +316,7 @@ func (c *Client) get(ctx context.Context, url string, result interface{}) error 
 			return err
 		}
 
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		if resp.StatusCode == http.StatusTooManyRequests && c.autoRetry {
 			select {

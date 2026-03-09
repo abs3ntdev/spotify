@@ -26,9 +26,8 @@ func Market(code string) RequestOption {
 	}
 }
 
-// Country enables a specific region to be specified for region-specific suggestions e.g popular playlists
-// The Country option takes an ISO 3166-1 alpha-2 country code.  It can be
-// used to ensure that the category exists for a particular country.
+// Country enables a specific region to be specified for region-specific content,
+// e.g. popular playlists. The Country option takes an ISO 3166-1 alpha-2 country code.
 func Country(code string) RequestOption {
 	return func(o *requestOptions) {
 		o.urlParams.Set("country", code)
@@ -37,9 +36,8 @@ func Country(code string) RequestOption {
 
 // Locale enables a specific language to be used when returning results.
 // The Locale argument is an ISO 639 language code and an ISO 3166-1 alpha-2
-// country code, separated by an underscore.  It can be used to get the
-// category strings in a particular language (for example: "es_MX" means
-// get categories in Mexico, returned in Spanish).
+// country code, separated by an underscore.  For example, "es_MX" means
+// return results in Spanish for Mexico.
 func Locale(code string) RequestOption {
 	return func(o *requestOptions) {
 		o.urlParams.Set("locale", code)

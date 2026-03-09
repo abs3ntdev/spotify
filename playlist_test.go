@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,8 +13,7 @@ import (
 )
 
 func TestFeaturedPlaylists(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/featured_playlists.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/featured_playlists.txt")
 
 	country := "SE"
 
@@ -45,15 +45,14 @@ func TestFeaturedPlaylistsExpiredToken(t *testing.T) {
 			"message": "The access token expired"
 		}
 	}`
-	client, server := testClientString(http.StatusUnauthorized, json)
-	defer server.Close()
+	client := testClientString(t, http.StatusUnauthorized, json)
 
 	msg, pl, err := client.FeaturedPlaylists(context.Background())
 	if msg != "" || pl != nil || err == nil {
 		t.Fatal("Expected an error")
 	}
-	serr, ok := err.(Error)
-	if !ok {
+	var serr Error
+	if !errors.As(err, &serr) {
 		t.Fatalf("Expected spotify Error, got %T", err)
 	}
 	if serr.Status != http.StatusUnauthorized {
@@ -62,8 +61,7 @@ func TestFeaturedPlaylistsExpiredToken(t *testing.T) {
 }
 
 func TestGetPlaylist(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/get_playlist.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/get_playlist.txt")
 
 	p, err := client.GetPlaylist(context.Background(), "1h9q8vXXDl2vHOmwdsuXms")
 	if err != nil {
@@ -77,14 +75,13 @@ func TestGetPlaylist(t *testing.T) {
 	}
 
 	// Ensure the Description field is also present in the SimplePlaylist part of the object
-	if p.SimplePlaylist.Description != "Bit of a overlap with phonk but whatever" {
+	if p.Description != "Bit of a overlap with phonk but whatever" {
 		t.Error("Description is invalid in the SimplePlaylist part of the object")
 	}
 }
 
 func TestGetPlaylistOpt(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/get_playlist_opt.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/get_playlist_opt.txt")
 
 	fields := "href,name,owner(!href,external_urls),tracks.items(added_by.id,track(name,href,album(name,href)))"
 	p, err := client.GetPlaylist(context.Background(), "59ZbFPES4DQwEjBpWHzrtC", Fields(fields))
@@ -104,8 +101,7 @@ func TestGetPlaylistOpt(t *testing.T) {
 }
 
 func TestGetPlaylistItemsEpisodes(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/playlist_items_episodes.json")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/playlist_items_episodes.json")
 
 	tracks, err := client.GetPlaylistItems(context.Background(), "playlistID")
 	if err != nil {
@@ -133,8 +129,7 @@ func TestGetPlaylistItemsEpisodes(t *testing.T) {
 }
 
 func TestGetPlaylistItemsTracks(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/playlist_items_tracks.json")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/playlist_items_tracks.json")
 
 	tracks, err := client.GetPlaylistItems(context.Background(), "playlistID")
 	if err != nil {
@@ -162,8 +157,7 @@ func TestGetPlaylistItemsTracks(t *testing.T) {
 }
 
 func TestGetPlaylistItemsTracksAndEpisodes(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/playlist_items_episodes_and_tracks.json")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/playlist_items_episodes_and_tracks.json")
 
 	tracks, err := client.GetPlaylistItems(context.Background(), "playlistID")
 	if err != nil {
@@ -207,10 +201,9 @@ func TestGetPlaylistItemsTracksAndEpisodes(t *testing.T) {
 
 func TestGetPlaylistItemsOverride(t *testing.T) {
 	var types string
-	client, server := testClientString(http.StatusForbidden, "", func(r *http.Request) {
+	client := testClientString(t, http.StatusForbidden, "", func(r *http.Request) {
 		types = r.URL.Query().Get("additional_types")
 	})
-	defer server.Close()
 
 	_, _ = client.GetPlaylistItems(context.Background(), "playlistID", AdditionalTypes(EpisodeAdditionalType))
 
@@ -221,10 +214,9 @@ func TestGetPlaylistItemsOverride(t *testing.T) {
 
 func TestGetPlaylistItemsDefault(t *testing.T) {
 	var types string
-	client, server := testClientString(http.StatusForbidden, "", func(r *http.Request) {
+	client := testClientString(t, http.StatusForbidden, "", func(r *http.Request) {
 		types = r.URL.Query().Get("additional_types")
 	})
-	defer server.Close()
 
 	_, _ = client.GetPlaylistItems(context.Background(), "playlistID")
 
@@ -274,8 +266,7 @@ var newPlaylist = `
 }`
 
 func TestCreatePlaylist(t *testing.T) {
-	client, server := testClientString(http.StatusCreated, fmt.Sprintf(newPlaylist, false))
-	defer server.Close()
+	client := testClientString(t, http.StatusCreated, fmt.Sprintf(newPlaylist, false))
 
 	p, err := client.CreatePlaylist(context.Background(), "A New Playlist", "Test Description", false, false)
 	if err != nil {
@@ -299,8 +290,7 @@ func TestCreatePlaylist(t *testing.T) {
 }
 
 func TestCreateCollaborativePlaylist(t *testing.T) {
-	client, server := testClientString(http.StatusCreated, fmt.Sprintf(newPlaylist, true))
-	defer server.Close()
+	client := testClientString(t, http.StatusCreated, fmt.Sprintf(newPlaylist, true))
 
 	p, err := client.CreatePlaylist(context.Background(), "A New Playlist", "Test Description", false, true)
 	if err != nil {
@@ -324,8 +314,7 @@ func TestCreateCollaborativePlaylist(t *testing.T) {
 }
 
 func TestRenamePlaylist(t *testing.T) {
-	client, server := testClientString(http.StatusOK, "")
-	defer server.Close()
+	client := testClientString(t, http.StatusOK, "")
 
 	if err := client.ChangePlaylistName(context.Background(), ID("playlist-id"), "new name"); err != nil {
 		t.Error(err)
@@ -333,8 +322,7 @@ func TestRenamePlaylist(t *testing.T) {
 }
 
 func TestChangePlaylistAccess(t *testing.T) {
-	client, server := testClientString(http.StatusOK, "")
-	defer server.Close()
+	client := testClientString(t, http.StatusOK, "")
 
 	if err := client.ChangePlaylistAccess(context.Background(), ID("playlist-id"), true); err != nil {
 		t.Error(err)
@@ -342,8 +330,7 @@ func TestChangePlaylistAccess(t *testing.T) {
 }
 
 func TestChangePlaylistDescription(t *testing.T) {
-	client, server := testClientString(http.StatusOK, "")
-	defer server.Close()
+	client := testClientString(t, http.StatusOK, "")
 
 	if err := client.ChangePlaylistDescription(context.Background(), ID("playlist-id"), "new description"); err != nil {
 		t.Error(err)
@@ -351,8 +338,7 @@ func TestChangePlaylistDescription(t *testing.T) {
 }
 
 func TestChangePlaylistNameAndAccess(t *testing.T) {
-	client, server := testClientString(http.StatusOK, "")
-	defer server.Close()
+	client := testClientString(t, http.StatusOK, "")
 
 	if err := client.ChangePlaylistNameAndAccess(context.Background(), ID("playlist-id"), "new_name", true); err != nil {
 		t.Error(err)
@@ -360,8 +346,7 @@ func TestChangePlaylistNameAndAccess(t *testing.T) {
 }
 
 func TestChangePlaylistNameAccessAndDescription(t *testing.T) {
-	client, server := testClientString(http.StatusOK, "")
-	defer server.Close()
+	client := testClientString(t, http.StatusOK, "")
 
 	if err := client.ChangePlaylistNameAccessAndDescription(context.Background(), ID("playlist-id"), "new_name", "new description", true); err != nil {
 		t.Error(err)
@@ -369,8 +354,7 @@ func TestChangePlaylistNameAccessAndDescription(t *testing.T) {
 }
 
 func TestChangePlaylistNameFailure(t *testing.T) {
-	client, server := testClientString(http.StatusForbidden, "")
-	defer server.Close()
+	client := testClientString(t, http.StatusForbidden, "")
 
 	if err := client.ChangePlaylistName(context.Background(), ID("playlist-id"), "new_name"); err == nil {
 		t.Error("Expected error but didn't get one")
@@ -378,8 +362,7 @@ func TestChangePlaylistNameFailure(t *testing.T) {
 }
 
 func TestAddTracksToPlaylist(t *testing.T) {
-	client, server := testClientString(http.StatusCreated, `{ "snapshot_id" : "JbtmHBDBAYu3/bt8BOXKjzKx3i0b6LCa/wVjyl6qQ2Yf6nFXkbmzuEa+ZI/U1yF+" }`)
-	defer server.Close()
+	client := testClientString(t, http.StatusCreated, `{ "snapshot_id" : "JbtmHBDBAYu3/bt8BOXKjzKx3i0b6LCa/wVjyl6qQ2Yf6nFXkbmzuEa+ZI/U1yF+" }`)
 
 	snapshot, err := client.AddTracksToPlaylist(context.Background(), ID("playlist_id"), ID("track1"), ID("track2"))
 	if err != nil {
@@ -391,13 +374,13 @@ func TestAddTracksToPlaylist(t *testing.T) {
 }
 
 func TestRemoveTracksFromPlaylist(t *testing.T) {
-	client, server := testClientString(http.StatusOK, `{ "snapshot_id" : "JbtmHBDBAYu3/bt8BOXKjzKx3i0b6LCa/wVjyl6qQ2Yf6nFXkbmzuEa+ZI/U1yF+" }`, func(req *http.Request) {
+	client := testClientString(t, http.StatusOK, `{ "snapshot_id" : "JbtmHBDBAYu3/bt8BOXKjzKx3i0b6LCa/wVjyl6qQ2Yf6nFXkbmzuEa+ZI/U1yF+" }`, func(req *http.Request) {
 		requestBody, err := io.ReadAll(req.Body)
 		if err != nil {
 			t.Fatal("Could not read request body:", err)
 		}
 
-		var body map[string]interface{}
+		var body map[string]any
 		err = json.Unmarshal(requestBody, &body)
 		if err != nil {
 			t.Fatal("Error decoding request body:", err)
@@ -406,11 +389,11 @@ func TestRemoveTracksFromPlaylist(t *testing.T) {
 		if !ok {
 			t.Error("No items JSON object in request body")
 		}
-		tracksSlice := tracksArray.([]interface{})
+		tracksSlice := tracksArray.([]any)
 		if l := len(tracksSlice); l != 2 {
 			t.Fatalf("Expected 2 tracks, got %d\n", l)
 		}
-		track0 := tracksSlice[0].(map[string]interface{})
+		track0 := tracksSlice[0].(map[string]any)
 		trackURI, ok := track0["uri"]
 		if !ok {
 			t.Error("Track object doesn't contain 'uri' field")
@@ -419,7 +402,6 @@ func TestRemoveTracksFromPlaylist(t *testing.T) {
 			t.Errorf("Expected URI: 'spotify:track:track1', got '%s'\n", trackURI)
 		}
 	})
-	defer server.Close()
 
 	snapshotID, err := client.RemoveTracksFromPlaylist(context.Background(), "playlistID", "track1", "track2")
 	if err != nil {
@@ -431,13 +413,13 @@ func TestRemoveTracksFromPlaylist(t *testing.T) {
 }
 
 func TestRemoveTracksFromPlaylistOpt(t *testing.T) {
-	client, server := testClientString(http.StatusOK, `{ "snapshot_id" : "JbtmHBDBAYu3/bt8BOXKjzKx3i0b6LCa/wVjyl6qQ2Yf6nFXkbmzuEa+ZI/U1yF+" }`, func(req *http.Request) {
+	client := testClientString(t, http.StatusOK, `{ "snapshot_id" : "JbtmHBDBAYu3/bt8BOXKjzKx3i0b6LCa/wVjyl6qQ2Yf6nFXkbmzuEa+ZI/U1yF+" }`, func(req *http.Request) {
 		requestBody, err := io.ReadAll(req.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		var body map[string]interface{}
+		var body map[string]any
 		err = json.Unmarshal(requestBody, &body)
 		if err != nil {
 			t.Fatal(err)
@@ -447,21 +429,20 @@ func TestRemoveTracksFromPlaylistOpt(t *testing.T) {
 			fmt.Println(string(requestBody))
 			return
 		}
-		jsonTracks := body["items"].([]interface{})
+		jsonTracks := body["items"].([]any)
 		if len(jsonTracks) != 3 {
 			t.Fatal("Expected 3 tracks, got", len(jsonTracks))
 		}
-		track1 := jsonTracks[1].(map[string]interface{})
+		track1 := jsonTracks[1].(map[string]any)
 		expected := "spotify:track:track1"
 		if track1["uri"] != expected {
 			t.Fatalf("Want '%s', got '%s'\n", expected, track1["uri"])
 		}
-		indices := track1["positions"].([]interface{})
+		indices := track1["positions"].([]any)
 		if len(indices) != 1 || int(indices[0].(float64)) != 9 {
 			t.Error("Track indices incorrect")
 		}
 	})
-	defer server.Close()
 
 	tracks := []TrackToRemove{
 		NewTrackToRemove("track0", []int{0, 4}), // remove track0 in position 0 and 4
@@ -530,16 +511,15 @@ func TestClient_ReplacePlaylistItems(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var gotRequestBody string
 
-			c, server := testClientString(tt.clientFields.httpCode, tt.clientFields.body, func(request *http.Request) {
+			c := testClientString(t, tt.clientFields.httpCode, tt.clientFields.body, func(request *http.Request) {
 				b, err := io.ReadAll(request.Body)
-				defer request.Body.Close()
+				defer func() { _ = request.Body.Close() }()
 				if err != nil {
 					t.Error(err)
 				}
 
 				gotRequestBody = string(b)
 			})
-			defer server.Close()
 
 			gotSnapshot, gotErr := c.ReplacePlaylistItems(tt.args.ctx, tt.args.playlistID, tt.args.items...)
 			if gotErr == nil && tt.want.err != "" {
@@ -566,8 +546,7 @@ func TestClient_ReplacePlaylistItems(t *testing.T) {
 }
 
 func TestReplacePlaylistTracks(t *testing.T) {
-	client, server := testClientString(http.StatusCreated, "")
-	defer server.Close()
+	client := testClientString(t, http.StatusCreated, "")
 
 	err := client.ReplacePlaylistTracks(context.Background(), "playlistID", "track1", "track2")
 	if err != nil {
@@ -576,8 +555,7 @@ func TestReplacePlaylistTracks(t *testing.T) {
 }
 
 func TestReplacePlaylistTracksForbidden(t *testing.T) {
-	client, server := testClientString(http.StatusForbidden, "")
-	defer server.Close()
+	client := testClientString(t, http.StatusForbidden, "")
 
 	err := client.ReplacePlaylistTracks(context.Background(), "playlistID", "track1", "track2")
 	if err == nil {
@@ -586,16 +564,16 @@ func TestReplacePlaylistTracksForbidden(t *testing.T) {
 }
 
 func TestReorderPlaylistRequest(t *testing.T) {
-	client, server := testClientString(http.StatusNotFound, "", func(req *http.Request) {
+	client := testClientString(t, http.StatusNotFound, "", func(req *http.Request) {
 		if ct := req.Header.Get("Content-Type"); ct != "application/json" {
 			t.Errorf("Expected Content-Type: application/json, got '%s'\n", ct)
 		}
 		if req.Method != "PUT" {
 			t.Errorf("Expected a PUT, got a %s\n", req.Method)
 		}
-		// unmarshal the JSON into a map[string]interface{}
+		// unmarshal the JSON into a map[string]any
 		// so we can test for existence of certain keys
-		var body map[string]interface{}
+		var body map[string]any
 		err := json.NewDecoder(req.Body).Decode(&body)
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
@@ -624,7 +602,6 @@ func TestReorderPlaylistRequest(t *testing.T) {
 			t.Error("Parameter snapshot_id shouldn't have been in body")
 		}
 	})
-	defer server.Close()
 
 	_, err := client.ReorderPlaylistTracks(context.Background(), "playlist", PlaylistReorderOptions{
 		RangeStart:   3,
@@ -636,7 +613,7 @@ func TestReorderPlaylistRequest(t *testing.T) {
 }
 
 func TestSetPlaylistImage(t *testing.T) {
-	client, server := testClientString(http.StatusAccepted, "", func(req *http.Request) {
+	client := testClientString(t, http.StatusAccepted, "", func(req *http.Request) {
 		if ct := req.Header.Get("Content-Type"); ct != "image/jpeg" {
 			t.Errorf("wrong content type, got %s, want image/jpeg", ct)
 		}
@@ -652,7 +629,6 @@ func TestSetPlaylistImage(t *testing.T) {
 			t.Errorf("invalid request body: want Zm9v, got %s", string(body))
 		}
 	})
-	defer server.Close()
 
 	err := client.SetPlaylistImage(context.Background(), "playlist", bytes.NewReader([]byte("foo")))
 	if err != nil {

@@ -104,8 +104,7 @@ var expected = AudioAnalysis{
 }
 
 func TestAudioAnalysis(t *testing.T) {
-	c, s := testClientFile(http.StatusOK, "test_data/get_audio_analysis.txt")
-	defer s.Close()
+	c := testClientFile(t, http.StatusOK, "test_data/get_audio_analysis.txt")
 
 	analysis, err := c.GetAudioAnalysis(context.Background(), "foo")
 	if err != nil {

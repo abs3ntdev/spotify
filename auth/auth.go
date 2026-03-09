@@ -3,6 +3,7 @@ package spotifyauth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -43,6 +44,10 @@ const (
 	ScopePlaylistReadCollaborative = "playlist-read-collaborative"
 	// ScopeUserFollowModify seeks write/delete access to
 	// the list of artists and other users that a user follows.
+	//
+	// Deprecated: Follow/unfollow endpoints for artists and users were removed
+	// in the February 2026 API changes. This scope may still be needed for
+	// playlist follow/unfollow operations.
 	ScopeUserFollowModify = "user-follow-modify"
 	// ScopeUserFollowRead seeks read access to the list of
 	// artists and other users that a user follows.
@@ -56,6 +61,9 @@ const (
 	// subscription details (type of user account).
 	ScopeUserReadPrivate = "user-read-private"
 	// ScopeUserReadEmail seeks read access to a user's email address.
+	//
+	// Deprecated: The email field was removed from the user profile in the
+	// February 2026 API changes. This scope may no longer have any effect.
 	ScopeUserReadEmail = "user-read-email"
 	// ScopeUserReadCurrentlyPlaying seeks read access to a user's currently playing track
 	ScopeUserReadCurrentlyPlaying = "user-read-currently-playing"
@@ -164,7 +172,7 @@ func (a Authenticator) AuthURL(state string, opts ...oauth2.AuthCodeOption) stri
 func (a Authenticator) Token(ctx context.Context, state string, r *http.Request, opts ...oauth2.AuthCodeOption) (*oauth2.Token, error) {
 	values := r.URL.Query()
 	if e := values.Get("error"); e != "" {
-		return nil, errors.New("spotify: auth failed - " + e)
+		return nil, fmt.Errorf("spotify: auth failed - %s", e)
 	}
 	code := values.Get("code")
 	if code == "" {
@@ -191,7 +199,7 @@ func (a Authenticator) Exchange(ctx context.Context, code string, opts ...oauth2
 }
 
 // Client creates a [net/http.Client] that will use the specified access token
-// for its API requests. You will typically pass this to [github.com/zmb3/spotify.New].
+// for its API requests. You will typically pass this to [github.com/abs3ntdev/spotify/v2.New].
 func (a Authenticator) Client(ctx context.Context, token *oauth2.Token) *http.Client {
 	return a.config.Client(ctx, token)
 }

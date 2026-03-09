@@ -97,7 +97,7 @@ func (c *Client) GetPlaylist(ctx context.Context, playlistID ID, opts ...Request
 		return nil, err
 	}
 
-	return &playlist, err
+	return &playlist, nil
 }
 
 // PlaylistItem contains info about an item in a playlist.
@@ -148,7 +148,7 @@ func (t *PlaylistItemTrack) UnmarshalJSON(b []byte) error {
 	case "track":
 		return json.Unmarshal(b, &t.Track)
 	default:
-		return fmt.Errorf("unrecognized item type: %s", itemType.Type)
+		return fmt.Errorf("spotify: unrecognized item type: %s", itemType.Type)
 	}
 }
 
@@ -292,7 +292,7 @@ func (c *Client) modifyPlaylist(ctx context.Context, playlistID ID, newName, new
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	return c.execute(req, nil, http.StatusCreated)
+	return c.execute(req, nil)
 }
 
 // AddTracksToPlaylist [adds one or more tracks to a user's playlist].
@@ -307,7 +307,7 @@ func (c *Client) AddTracksToPlaylist(ctx context.Context, playlistID ID, trackID
 	for i, id := range trackIDs {
 		uris[i] = fmt.Sprintf("spotify:track:%s", id)
 	}
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	m["uris"] = uris
 
 	spotifyURL := fmt.Sprintf("%splaylists/%s/items",
@@ -395,10 +395,10 @@ func (c *Client) RemoveTracksFromPlaylistOpt(
 func (c *Client) removeTracksFromPlaylist(
 	ctx context.Context,
 	playlistID ID,
-	tracks interface{},
+	tracks any,
 	snapshotID string,
 ) (newSnapshotID string, err error) {
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	m["items"] = tracks
 	if snapshotID != "" {
 		m["snapshot_id"] = snapshotID
@@ -425,7 +425,7 @@ func (c *Client) removeTracksFromPlaylist(
 		return "", err
 	}
 
-	return result.SnapshotID, err
+	return result.SnapshotID, nil
 }
 
 // ReplacePlaylistTracks [replaces all of the tracks in a playlist], overwriting its
@@ -451,7 +451,7 @@ func (c *Client) ReplacePlaylistTracks(ctx context.Context, playlistID ID, track
 	if err != nil {
 		return err
 	}
-	return c.execute(req, nil, http.StatusCreated)
+	return c.execute(req, nil)
 }
 
 // ReplacePlaylistItems [replaces all the items in a playlist], overwriting its
@@ -467,7 +467,7 @@ func (c *Client) ReplacePlaylistTracks(ctx context.Context, playlistID ID, track
 //
 // [replaces all the items in a playlist]: https://developer.spotify.com/documentation/web-api/reference/reorder-or-replace-playlists-tracks
 func (c *Client) ReplacePlaylistItems(ctx context.Context, playlistID ID, items ...URI) (string, error) {
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	m["uris"] = items
 
 	body, err := json.Marshal(m)
@@ -486,7 +486,7 @@ func (c *Client) ReplacePlaylistItems(ctx context.Context, playlistID ID, items 
 		SnapshotID string `json:"snapshot_id"`
 	}{}
 
-	err = c.execute(req, &result, http.StatusCreated)
+	err = c.execute(req, &result)
 	if err != nil {
 		return "", err
 	}
@@ -552,6 +552,23 @@ func (c *Client) ReorderPlaylistTracks(ctx context.Context, playlistID ID, opt P
 	}
 
 	return result.SnapshotID, nil
+}
+
+// GetPlaylistCoverImage gets the [current image] associated with a
+// specific playlist.
+//
+// [current image]: https://developer.spotify.com/documentation/web-api/reference/get-playlist-cover
+func (c *Client) GetPlaylistCoverImage(ctx context.Context, playlistID ID) ([]Image, error) {
+	spotifyURL := fmt.Sprintf("%splaylists/%s/images", c.baseURL, playlistID)
+
+	var images []Image
+
+	err := c.get(ctx, spotifyURL, &images)
+	if err != nil {
+		return nil, err
+	}
+
+	return images, nil
 }
 
 // SetPlaylistImage replaces the image used to represent a playlist.

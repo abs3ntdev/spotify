@@ -43,12 +43,12 @@ func TestClient_NextPage(t *testing.T) {
 	for _, tt := range testTable {
 		t.Run(tt.Name, func(t *testing.T) {
 			wasCalled := false
-			client, server := testClientString(200, `{"total": 100}`, func(request *http.Request) {
+			client := testClientString(t, 200, `{"total": 100}`, func(request *http.Request) {
 				wasCalled = true
 				assert.Equal(t, tt.ExpectedPath, request.URL.RequestURI())
 			})
 			if tt.Input != nil && tt.Input.Next != "" {
-				tt.Input.Next = server.URL + tt.Input.Next // add fake server url so we intercept the message
+				tt.Input.Next = client.baseURL[:len(client.baseURL)-1] + tt.Input.Next // add fake server url so we intercept the message
 			}
 
 			err := client.NextPage(context.Background(), tt.Input)
@@ -98,12 +98,12 @@ func TestClient_PreviousPage(t *testing.T) {
 	for _, tt := range testTable {
 		t.Run(tt.Name, func(t *testing.T) {
 			wasCalled := false
-			client, server := testClientString(200, `{"total": 100}`, func(request *http.Request) {
+			client := testClientString(t, 200, `{"total": 100}`, func(request *http.Request) {
 				wasCalled = true
 				assert.Equal(t, tt.ExpectedPath, request.URL.RequestURI())
 			})
 			if tt.Input != nil && tt.Input.Previous != "" {
-				tt.Input.Previous = server.URL + tt.Input.Previous // add fake server url so we intercept the message
+				tt.Input.Previous = client.baseURL[:len(client.baseURL)-1] + tt.Input.Previous // add fake server url so we intercept the message
 			}
 
 			err := client.PreviousPage(context.Background(), tt.Input)

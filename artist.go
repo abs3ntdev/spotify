@@ -40,14 +40,15 @@ func (c *Client) GetArtist(ctx context.Context, id ID) (*FullArtist, error) {
 	return &a, nil
 }
 
-// GetArtistAlbums gets Spotify catalog information about an artist's albums.
-// It is equivalent to GetArtistAlbumsOpt(artistID, nil).
+// GetArtistAlbums gets Spotify catalog information about an [artist's albums].
 //
-// The AlbumType argument can be used to find a particular types of album.
+// The AlbumType argument can be used to find particular types of album.
 // If the Market is not specified, Spotify will likely return a lot
-// of duplicates (one for each market in which the album is available
+// of duplicates (one for each market in which the album is available).
 //
-// Supported options: [Market].
+// Supported options: [Market], [Limit], [Offset].
+//
+// [artist's albums]: https://developer.spotify.com/documentation/web-api/reference/get-an-artists-albums
 func (c *Client) GetArtistAlbums(ctx context.Context, artistID ID, ts []AlbumType, opts ...RequestOption) (*SimpleAlbumPage, error) {
 	spotifyURL := fmt.Sprintf("%sartists/%s/albums", c.baseURL, artistID)
 	// add optional query string if options were specified

@@ -15,40 +15,43 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func testClient(code int, body io.Reader, validators ...func(*http.Request)) (*Client, *httptest.Server) {
+func testClient(t testing.TB, code int, body io.Reader, validators ...func(*http.Request)) *Client {
+	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		for _, v := range validators {
 			v(r)
 		}
 		w.WriteHeader(code)
 		_, _ = io.Copy(w, body)
-		r.Body.Close()
+		_ = r.Body.Close()
 		if closer, ok := body.(io.Closer); ok {
-			closer.Close()
+			_ = closer.Close()
 		}
 	}))
-	client := &Client{
+	t.Cleanup(server.Close)
+	return &Client{
 		http:    http.DefaultClient,
 		baseURL: server.URL + "/",
 	}
-	return client, server
 }
 
-// Returns a client whose requests will always return
-// the specified status code and body.
-func testClientString(code int, body string, validators ...func(*http.Request)) (*Client, *httptest.Server) {
-	return testClient(code, strings.NewReader(body), validators...)
+// testClientString returns a client whose requests will always return
+// the specified status code and body string.
+func testClientString(t testing.TB, code int, body string, validators ...func(*http.Request)) *Client {
+	t.Helper()
+	return testClient(t, code, strings.NewReader(body), validators...)
 }
 
-// Returns a client whose requests will always return
+// testClientFile returns a client whose requests will always return
 // a response with the specified status code and a body
 // that is read from the specified file.
-func testClientFile(code int, filename string, validators ...func(*http.Request)) (*Client, *httptest.Server) {
+func testClientFile(t testing.TB, code int, filename string, validators ...func(*http.Request)) *Client {
+	t.Helper()
 	f, err := os.Open(filename)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
-	return testClient(code, f, validators...)
+	return testClient(t, code, f, validators...)
 }
 
 func TestClient_Token(t *testing.T) {
@@ -156,7 +159,7 @@ func TestRateLimitExceededReportsRetryAfter(t *testing.T) {
 		handlers[i](w, r)
 		i++
 	}))
-	defer server.Close()
+	t.Cleanup(server.Close)
 
 	client := &Client{http: http.DefaultClient, baseURL: server.URL + "/"}
 	_, err := client.GetAlbum(context.Background(), "test")

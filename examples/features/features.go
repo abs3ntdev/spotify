@@ -48,7 +48,7 @@ func main() {
 
 	// *display in tabular form using TabWriter
 	w := tabwriter.NewWriter(os.Stdout, 10, 2, 3, ' ', 0)
-	fmt.Fprintf(w, "%s\t%s\t%s\t%s\t\n\n", "Songs", "Energy", "Danceability", "Valence")
+	_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t\n\n", "Songs", "Energy", "Danceability", "Valence")
 
 	// loop through tracks
 	for _, track := range res.Tracks {
@@ -59,7 +59,7 @@ func main() {
 			log.Fatal("error getting audio features...", err.Error())
 			return
 		}
-		fmt.Fprintf(w, "%s\t%v\t%v\t%v\t\n", track.Name, features[0].Energy, features[0].Danceability, features[0].Valence)
-		w.Flush()
+		_, _ = fmt.Fprintf(w, "%s\t%v\t%v\t%v\t\n", track.Name, features[0].Energy, features[0].Danceability, features[0].Valence)
+		_ = w.Flush()
 	}
 }

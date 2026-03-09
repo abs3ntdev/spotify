@@ -80,8 +80,7 @@ const albumsResponse = `
 }`
 
 func TestFindArtist(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/find_artist.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/find_artist.txt")
 
 	artist, err := client.GetArtist(context.Background(), ID("0TnOYISbd1XYRBk9myaseg"))
 	if err != nil {
@@ -93,8 +92,7 @@ func TestFindArtist(t *testing.T) {
 }
 
 func TestArtistAlbumsFiltered(t *testing.T) {
-	client, server := testClientString(http.StatusOK, albumsResponse)
-	defer server.Close()
+	client := testClientString(t, http.StatusOK, albumsResponse)
 
 	albums, err := client.GetArtistAlbums(context.Background(), "1vCWHaC5f2uS3yhpwWbIA6", []AlbumType{AlbumTypeSingle}, Limit(2))
 	if err != nil {

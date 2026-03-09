@@ -7,8 +7,7 @@ import (
 )
 
 func TestSearchArtist(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/search_artist.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/search_artist.txt")
 
 	result, err := client.Search(context.Background(), "tania bowra", SearchTypeArtist)
 	if err != nil {
@@ -32,8 +31,7 @@ func TestSearchArtist(t *testing.T) {
 }
 
 func TestSearchTracks(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/search_tracks.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/search_tracks.txt")
 
 	result, err := client.Search(context.Background(), "uptown", SearchTypeTrack)
 	if err != nil {
@@ -57,8 +55,7 @@ func TestSearchTracks(t *testing.T) {
 }
 
 func TestSearchPlaylistTrack(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/search_trackplaylist.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/search_trackplaylist.txt")
 
 	result, err := client.Search(context.Background(), "holiday", SearchTypePlaylist|SearchTypeTrack)
 	if err != nil {
@@ -79,8 +76,7 @@ func TestSearchPlaylistTrack(t *testing.T) {
 }
 
 func TestPrevNextSearchPageErrors(t *testing.T) {
-	client, server := testClientString(0, "")
-	defer server.Close()
+	client := testClientString(t, 0, "")
 
 	// we expect to get ErrNoMorePages when trying to get the prev/next page
 	// under either of these conditions:

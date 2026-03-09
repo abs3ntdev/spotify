@@ -340,11 +340,6 @@ func (c *Client) PauseOpt(ctx context.Context, opt *PlayOptions) error {
 // active device. This call requires [ScopeUserReadPlaybackState]
 func (c *Client) GetQueue(ctx context.Context) (*Queue, error) {
 	spotifyURL := c.baseURL + "me/player/queue"
-	v := url.Values{}
-
-	if params := v.Encode(); params != "" {
-		spotifyURL += "?" + params
-	}
 
 	var q Queue
 	err := c.get(ctx, spotifyURL, &q)

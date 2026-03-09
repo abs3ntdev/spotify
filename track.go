@@ -6,12 +6,6 @@ import (
 	"time"
 )
 
-type TrackExternalIDs struct {
-	ISRC string `json:"isrc"`
-	EAN  string `json:"ean"`
-	UPC  string `json:"upc"`
-}
-
 // SimpleTrack contains basic info about a track.
 type SimpleTrack struct {
 	Album   SimpleAlbum    `json:"album"`
@@ -25,14 +19,10 @@ type SimpleTrack struct {
 	Explicit bool `json:"explicit"`
 	// External URLs for this track.
 	ExternalURLs map[string]string `json:"external_urls"`
-	// ExternalIDs are IDs for this track in other databases
-	ExternalIDs TrackExternalIDs `json:"external_ids"`
 	// A link to the Web API endpoint providing full details for this track.
 	Endpoint string `json:"href"`
 	ID       ID     `json:"id"`
 	Name     string `json:"name"`
-	// A URL to a 30 second preview (MP3) of the track.
-	PreviewURL string `json:"preview_url"`
 	// The number of the track.  If an album has several
 	// discs, the track number is the number on the specified
 	// DiscNumber.
@@ -49,8 +39,6 @@ func (st SimpleTrack) String() string {
 // FullTrack provides extra track data in addition to what is provided by [SimpleTrack].
 type FullTrack struct {
 	SimpleTrack
-	// The album on which the track appears. The album object includes a link in href to full information about the album.
-	Album SimpleAlbum `json:"album"`
 	// Known external IDs for the track.
 	ExternalIDs map[string]string `json:"external_ids"`
 

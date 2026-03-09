@@ -7,8 +7,7 @@ import (
 )
 
 func TestFindTrack(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/find_track.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/find_track.txt")
 
 	track, err := client.GetTrack(context.Background(), "1zHlj4dQ8ZAtrayhuDDmkY")
 	if err != nil {
@@ -21,8 +20,7 @@ func TestFindTrack(t *testing.T) {
 }
 
 func TestFindTrackWithFloats(t *testing.T) {
-	client, server := testClientFile(http.StatusOK, "test_data/find_track_with_floats.txt")
-	defer server.Close()
+	client := testClientFile(t, http.StatusOK, "test_data/find_track_with_floats.txt")
 
 	track, err := client.GetTrack(context.Background(), "1zHlj4dQ8ZAtrayhuDDmkY")
 	if err != nil {

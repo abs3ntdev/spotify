@@ -2,7 +2,7 @@
 // In order to run this example yourself, you'll need to:
 //
 //  1. Register an application at: https://developer.spotify.com/my-applications/
-//       - Use "http://localhost:8080/callback" as the redirect URI
+//     - Use "http://localhost:8080/callback" as the redirect URI
 //  2. Set the SPOTIFY_ID environment variable to the client ID you got in step 1.
 package main
 
@@ -11,8 +11,8 @@ import (
 	"fmt"
 	spotifyauth "github.com/abs3ntdev/spotify/v2/auth"
 	"log"
-	"os"
 	"net/http"
+	"os"
 
 	"golang.org/x/oauth2"
 
@@ -41,7 +41,11 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Got request for:", r.URL.String())
 	})
-	go http.ListenAndServe(":8080", nil)
+	go func() {
+		if err := http.ListenAndServe(":8080", nil); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	url := auth.AuthURL(state,
 		oauth2.SetAuthURLParam("code_challenge_method", "S256"),
@@ -74,6 +78,6 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 	}
 	// use the token to get an authenticated client
 	client := spotify.New(auth.Client(r.Context(), tok))
-	fmt.Fprintf(w, "Login Completed!")
+	_, _ = fmt.Fprintf(w, "Login Completed!")
 	ch <- client
 }

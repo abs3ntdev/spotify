@@ -2,7 +2,7 @@
 // In order to run this example yourself, you'll need to:
 //
 //  1. Register an application at: https://developer.spotify.com/my-applications/
-//       - Use "http://localhost:8080/callback" as the redirect URI
+//     - Use "http://localhost:8080/callback" as the redirect URI
 //  2. Set the SPOTIFY_ID environment variable to the client ID you got in step 1.
 //  3. Set the SPOTIFY_SECRET environment variable to the client secret from step 1.
 package main
@@ -34,10 +34,10 @@ var html = `
 `
 
 var (
-	auth  = spotifyauth.New(
+	auth = spotifyauth.New(
 		spotifyauth.WithRedirectURL(redirectURI),
 		spotifyauth.WithScopes(spotifyauth.ScopeUserReadCurrentlyPlaying, spotifyauth.ScopeUserReadPlaybackState, spotifyauth.ScopeUserModifyPlaybackState),
-		)
+	)
 	ch    = make(chan *spotify.Client)
 	state = "abc123"
 )
@@ -72,7 +72,7 @@ func main() {
 		}
 
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, html)
+		_, _ = fmt.Fprint(w, html)
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -100,8 +100,9 @@ func main() {
 		fmt.Printf("Found your %s (%s)\n", playerState.Device.Type, playerState.Device.Name)
 	}()
 
-	http.ListenAndServe(":8080", nil)
-
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func completeAuth(w http.ResponseWriter, r *http.Request) {
@@ -117,6 +118,6 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 	// use the token to get an authenticated client
 	client := spotify.New(auth.Client(r.Context(), tok))
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprintf(w, "Login Completed!"+html)
+	_, _ = fmt.Fprint(w, "Login Completed!"+html)
 	ch <- client
 }
