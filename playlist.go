@@ -17,7 +17,7 @@ type PlaylistTracks struct {
 	// the playlist's tracks can be retrieved.
 	Endpoint string `json:"href"`
 	// The total number of tracks in the playlist.
-	Total uint `json:"total"`
+	Total Numeric `json:"total"`
 }
 
 // SimplePlaylist contains basic info about a Spotify playlist.
@@ -47,7 +47,7 @@ type SimplePlaylist struct {
 	URI   URI            `json:"uri"`
 }
 
-// FullPlaylist provides extra playlist data in addition to the data provided by SimplePlaylist.
+// FullPlaylist provides extra playlist data in addition to the data provided by [SimplePlaylist].
 type FullPlaylist struct {
 	SimplePlaylist
 	// Information about the followers of this playlist.
@@ -55,8 +55,11 @@ type FullPlaylist struct {
 	Items     PlaylistTrackPage `json:"items"`
 }
 
-// FeaturedPlaylistsOpt gets a list of playlists featured by Spotify.
-// Supported options: Locale, Country, Timestamp, Limit, Offset
+// FeaturedPlaylists gets a [list of playlists featured by Spotify].
+//
+// Supported options: [Locale], [Country], [Timestamp], [Limit], [Offset].
+//
+// [list of playlists featured by Spotify]: https://developer.spotify.com/documentation/web-api/reference/get-featured-playlists
 func (c *Client) FeaturedPlaylists(ctx context.Context, opts ...RequestOption) (message string, playlists *SimplePlaylistPage, e error) {
 	spotifyURL := c.baseURL + "browse/featured-playlists"
 	if params := processOptions(opts...).urlParams.Encode(); params != "" {
@@ -76,8 +79,11 @@ func (c *Client) FeaturedPlaylists(ctx context.Context, opts ...RequestOption) (
 	return result.Message, &result.Playlists, nil
 }
 
-// GetPlaylist fetches a playlist from spotify.
-// Supported options: Fields
+// GetPlaylist [fetches a playlist] from spotify.
+//
+// Supported options: [Fields].
+//
+// [fetches a playlist]: https://developer.spotify.com/documentation/web-api/reference/get-playlist
 func (c *Client) GetPlaylist(ctx context.Context, playlistID ID, opts ...RequestOption) (*FullPlaylist, error) {
 	spotifyURL := fmt.Sprintf("%splaylists/%s", c.baseURL, playlistID)
 	if params := processOptions(opts...).urlParams.Encode(); params != "" {
@@ -97,8 +103,8 @@ func (c *Client) GetPlaylist(ctx context.Context, playlistID ID, opts ...Request
 // PlaylistItem contains info about an item in a playlist.
 type PlaylistItem struct {
 	// The date and time the track was added to the playlist.
-	// You can use the TimestampLayout constant to convert
-	// this field to a time.Time value.
+	// You can use [TimestampLayout] to convert
+	// this field to a [time.Time].
 	// Warning: very old playlists may not populate this value.
 	AddedAt string `json:"added_at"`
 	// The Spotify user who added the track to the playlist.
@@ -138,20 +144,12 @@ func (t *PlaylistItemTrack) UnmarshalJSON(b []byte) error {
 
 	switch itemType.Type {
 	case "episode":
-		err := json.Unmarshal(b, &t.Episode)
-		if err != nil {
-			return err
-		}
+		return json.Unmarshal(b, &t.Episode)
 	case "track":
-		err := json.Unmarshal(b, &t.Track)
-		if err != nil {
-			return err
-		}
+		return json.Unmarshal(b, &t.Track)
 	default:
 		return fmt.Errorf("unrecognized item type: %s", itemType.Type)
 	}
-
-	return nil
 }
 
 // PlaylistItemPage contains information about items in a playlist.
@@ -160,10 +158,13 @@ type PlaylistItemPage struct {
 	Items []PlaylistItem `json:"items"`
 }
 
-// GetPlaylistItems gets full details of the items in a playlist, given the
-// playlist's Spotify ID.
+// GetPlaylistItems [gets full details of the items in a playlist], given the
+// playlist's [Spotify ID].
 //
-// Supported options: Limit, Offset, Market, Fields
+// Supported options: [Limit], [Offset], [Market], [Fields].
+//
+// [gets full details of the items in a playlist]: https://developer.spotify.com/documentation/web-api/reference/get-playlists-tracks
+// [Spotify ID]: https://developer.spotify.com/documentation/web-api/#spotify-uris-and-ids
 func (c *Client) GetPlaylistItems(ctx context.Context, playlistID ID, opts ...RequestOption) (*PlaylistItemPage, error) {
 	spotifyURL := fmt.Sprintf("%splaylists/%s/items", c.baseURL, playlistID)
 
@@ -181,7 +182,7 @@ func (c *Client) GetPlaylistItems(ctx context.Context, playlistID ID, opts ...Re
 		return nil, err
 	}
 
-	return &result, err
+	return &result, nil
 }
 
 // CreatePlaylist creates a playlist for the current user.
@@ -189,8 +190,8 @@ func (c *Client) GetPlaylistItems(ctx context.Context, playlistID ID, opts ...Re
 // The playlistName does not need to be unique - a user can have
 // several playlists with the same name.
 //
-// Creating a public playlist requires ScopePlaylistModifyPublic;
-// creating a private playlist requires ScopePlaylistModifyPrivate.
+// Creating a public playlist requires [ScopePlaylistModifyPublic];
+// creating a private playlist requires [ScopePlaylistModifyPrivate].
 //
 // On success, the newly created playlist is returned.
 func (c *Client) CreatePlaylist(ctx context.Context, playlistName, description string, public bool, collaborative bool) (*FullPlaylist, error) {
@@ -222,44 +223,50 @@ func (c *Client) CreatePlaylist(ctx context.Context, playlistName, description s
 		return nil, err
 	}
 
-	return &p, err
+	return &p, nil
 }
 
-// ChangePlaylistName changes the name of a playlist.  This call requires that the
-// user has authorized the ScopePlaylistModifyPublic or ScopePlaylistModifyPrivate
+// ChangePlaylistName [changes the name of a playlist].  This call requires that the
+// user has authorized the [ScopePlaylistModifyPublic] or [ScopePlaylistModifyPrivate]
 // scopes (depending on whether the playlist is public or private).
 // The current user must own the playlist in order to modify it.
+//
+// [changes the name of a playlist]: https://developer.spotify.com/documentation/web-api/reference/change-playlist-details
 func (c *Client) ChangePlaylistName(ctx context.Context, playlistID ID, newName string) error {
 	return c.modifyPlaylist(ctx, playlistID, newName, "", nil)
 }
 
-// ChangePlaylistAccess modifies the public/private status of a playlist.  This call
-// requires that the user has authorized the ScopePlaylistModifyPublic or
-// ScopePlaylistModifyPrivate scopes (depending on whether the playlist is
-// currently public or private).  The current user must own the playlist in order to modify it.
+// ChangePlaylistAccess [modifies the public/private status of a playlist].  This call
+// requires that the user has authorized the [ScopePlaylistModifyPublic] or
+// [ScopePlaylistModifyPrivate] scopes (depending on whether the playlist is
+// currently public or private).  The current user must own the playlist to modify it.
+//
+// [modifies the public/private status of a playlist]: https://developer.spotify.com/documentation/web-api/reference/change-playlist-details
 func (c *Client) ChangePlaylistAccess(ctx context.Context, playlistID ID, public bool) error {
 	return c.modifyPlaylist(ctx, playlistID, "", "", &public)
 }
 
-// ChangePlaylistDescription modifies the description of a playlist.  This call
-// requires that the user has authorized the ScopePlaylistModifyPublic or
-// ScopePlaylistModifyPrivate scopes (depending on whether the playlist is
-// currently public or private).  The current user must own the playlist in order to modify it.
+// ChangePlaylistDescription [modifies the description of a playlist].  This call
+// requires that the user has authorized the [ScopePlaylistModifyPublic] or
+// [ScopePlaylistModifyPrivate] scopes (depending on whether the playlist is
+// currently public or private).  The current user must own the playlist to modify it.
+//
+// [modifies the description of a playlist]: https://developer.spotify.com/documentation/web-api/reference/change-playlist-details
 func (c *Client) ChangePlaylistDescription(ctx context.Context, playlistID ID, newDescription string) error {
 	return c.modifyPlaylist(ctx, playlistID, "", newDescription, nil)
 }
 
-// ChangePlaylistNameAndAccess combines ChangePlaylistName and ChangePlaylistAccess into
-// a single Web API call.  It requires that the user has authorized the ScopePlaylistModifyPublic
-// or ScopePlaylistModifyPrivate scopes (depending on whether the playlist is currently
-// public or private).  The current user must own the playlist in order to modify it.
+// ChangePlaylistNameAndAccess combines [ChangePlaylistName] and [ChangePlaylistAccess] into
+// a single Web API call.  It requires that the user has authorized the [ScopePlaylistModifyPublic]
+// or [ScopePlaylistModifyPrivate] scopes (depending on whether the playlist is currently
+// public or private).  The current user must own the playlist to modify it.
 func (c *Client) ChangePlaylistNameAndAccess(ctx context.Context, playlistID ID, newName string, public bool) error {
 	return c.modifyPlaylist(ctx, playlistID, newName, "", &public)
 }
 
-// ChangePlaylistNameAccessAndDescription combines ChangePlaylistName, ChangePlaylistAccess, and
-// ChangePlaylistDescription into a single Web API call.  It requires that the user has authorized
-// the ScopePlaylistModifyPublic or ScopePlaylistModifyPrivate scopes (depending on whether the
+// ChangePlaylistNameAccessAndDescription combines [ChangePlaylistName], [ChangePlaylistAccess], and
+// [ChangePlaylistDescription] into a single Web API call.  It requires that the user has authorized
+// the [ScopePlaylistModifyPublic] or [ScopePlaylistModifyPrivate] scopes (depending on whether the
 // playlist is currently public or private).  The current user must own the playlist in order to modify it.
 func (c *Client) ChangePlaylistNameAccessAndDescription(ctx context.Context, playlistID ID, newName, newDescription string, public bool) error {
 	return c.modifyPlaylist(ctx, playlistID, newName, newDescription, &public)
@@ -285,18 +292,16 @@ func (c *Client) modifyPlaylist(ctx context.Context, playlistID ID, newName, new
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	err = c.execute(req, nil, http.StatusCreated)
-	if err != nil {
-		return err
-	}
-	return nil
+	return c.execute(req, nil, http.StatusCreated)
 }
 
-// AddTracksToPlaylist adds one or more tracks to a user's playlist.
-// This call requires ScopePlaylistModifyPublic or ScopePlaylistModifyPrivate.
+// AddTracksToPlaylist [adds one or more tracks to a user's playlist].
+// This call requires [ScopePlaylistModifyPublic] or [ScopePlaylistModifyPrivate].
 // A maximum of 100 tracks can be added per call.  It returns a snapshot ID that
 // can be used to identify this version (the new version) of the playlist in
 // future requests.
+//
+// [adds one or more tracks to a user's playlist]: https://developer.spotify.com/documentation/web-api/reference/add-tracks-to-playlist
 func (c *Client) AddTracksToPlaylist(ctx context.Context, playlistID ID, trackIDs ...ID) (snapshotID string, err error) {
 	uris := make([]string, len(trackIDs))
 	for i, id := range trackIDs {
@@ -329,13 +334,15 @@ func (c *Client) AddTracksToPlaylist(ctx context.Context, playlistID ID, trackID
 	return result.SnapshotID, nil
 }
 
-// RemoveTracksFromPlaylist removes one or more tracks from a user's playlist.
-// This call requires that the user has authorized the ScopePlaylistModifyPublic
-// or ScopePlaylistModifyPrivate scopes.
+// RemoveTracksFromPlaylist [removes one or more tracks from a user's playlist].
+// This call requires that the user has authorized the [ScopePlaylistModifyPublic]
+// or [ScopePlaylistModifyPrivate] scopes.
 //
 // If the track(s) occur multiple times in the specified playlist, then all occurrences
 // of the track will be removed.  If successful, the snapshot ID returned can be used to
 // identify the playlist version in future requests.
+//
+// [removes one or more tracks from a user's playlist]: https://developer.spotify.com/documentation/web-api/reference/remove-tracks-playlist
 func (c *Client) RemoveTracksFromPlaylist(ctx context.Context, playlistID ID, trackIDs ...ID) (newSnapshotID string, err error) {
 	tracks := make([]struct {
 		URI string `json:"uri"`
@@ -355,7 +362,7 @@ type TrackToRemove struct {
 	Positions []int  `json:"positions"`
 }
 
-// NewTrackToRemove creates a new TrackToRemove object with the specified
+// NewTrackToRemove returns a [TrackToRemove] with the specified
 // track ID and playlist locations.
 func NewTrackToRemove(trackID string, positions []int) TrackToRemove {
 	return TrackToRemove{
@@ -364,7 +371,7 @@ func NewTrackToRemove(trackID string, positions []int) TrackToRemove {
 	}
 }
 
-// RemoveTracksFromPlaylistOpt is like RemoveTracksFromPlaylist, but it supports
+// RemoveTracksFromPlaylistOpt is like [RemoveTracksFromPlaylist], but it supports
 // optional parameters that offer more fine-grained control.  Instead of deleting
 // all occurrences of a track, this function takes an index with each track URI
 // that indicates the position of the track in the playlist.
@@ -421,16 +428,18 @@ func (c *Client) removeTracksFromPlaylist(
 	return result.SnapshotID, err
 }
 
-// ReplacePlaylistTracks replaces all of the tracks in a playlist, overwriting its
+// ReplacePlaylistTracks [replaces all of the tracks in a playlist], overwriting its
 // existing tracks  This can be useful for replacing or reordering tracks, or for
 // clearing a playlist.
 //
 // Modifying a public playlist requires that the user has authorized the
-// ScopePlaylistModifyPublic scope.  Modifying a private playlist requires the
-// ScopePlaylistModifyPrivate scope.
+// [ScopePlaylistModifyPublic] scope.  Modifying a private playlist requires the
+// [ScopePlaylistModifyPrivate] scope.
 //
-// A maximum of 100 tracks is permitted in this call.  Additional tracks must be
-// added via AddTracksToPlaylist.
+// A maximum of 100 tracks are permitted in this call.  Additional tracks must be
+// added via [AddTracksToPlaylist].
+//
+// [replaces all of the tracks in a playlist]: https://developer.spotify.com/documentation/web-api/reference/reorder-or-replace-playlists-tracks
 func (c *Client) ReplacePlaylistTracks(ctx context.Context, playlistID ID, trackIDs ...ID) error {
 	trackURIs := make([]string, len(trackIDs))
 	for i, u := range trackIDs {
@@ -442,24 +451,21 @@ func (c *Client) ReplacePlaylistTracks(ctx context.Context, playlistID ID, track
 	if err != nil {
 		return err
 	}
-	err = c.execute(req, nil, http.StatusCreated)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return c.execute(req, nil, http.StatusCreated)
 }
 
-// ReplacePlaylistItems replaces all the items in a playlist, overwriting its
+// ReplacePlaylistItems [replaces all the items in a playlist], overwriting its
 // existing tracks  This can be useful for replacing or reordering tracks, or for
 // clearing a playlist.
 //
 // Modifying a public playlist requires that the user has authorized the
-// ScopePlaylistModifyPublic scope.  Modifying a private playlist requires the
-// ScopePlaylistModifyPrivate scope.
+// [ScopePlaylistModifyPublic] scope.  Modifying a private playlist requires the
+// [ScopePlaylistModifyPrivate] scope.
 //
 // A maximum of 100 tracks is permited in this call.  Additional tracks must be
 // added via AddTracksToPlaylist.
+//
+// [replaces all the items in a playlist]: https://developer.spotify.com/documentation/web-api/reference/reorder-or-replace-playlists-tracks
 func (c *Client) ReplacePlaylistItems(ctx context.Context, playlistID ID, items ...URI) (string, error) {
 	m := make(map[string]interface{})
 	m["uris"] = items
@@ -502,29 +508,29 @@ func (c *Client) ReplacePlaylistItems(ctx context.Context, playlistID ID, items 
 type PlaylistReorderOptions struct {
 	// The position of the first track to be reordered.
 	// This field is required.
-	RangeStart int `json:"range_start"`
+	RangeStart Numeric `json:"range_start"`
 	// The amount of tracks to be reordered.  This field is optional.  If
 	// you don't set it, the value 1 will be used.
-	RangeLength int `json:"range_length,omitempty"`
+	RangeLength Numeric `json:"range_length,omitempty"`
 	// The position where the tracks should be inserted.  To reorder the
 	// tracks to the end of the playlist, simply set this to the position
 	// after the last track.  This field is required.
-	InsertBefore int `json:"insert_before"`
+	InsertBefore Numeric `json:"insert_before"`
 	// The playlist's snapshot ID against which you wish to make the changes.
 	// This field is optional.
 	SnapshotID string `json:"snapshot_id,omitempty"`
 }
 
 // ReorderPlaylistTracks reorders a track or group of tracks in a playlist.  It
-// returns a snapshot ID that can be used to identify the [newly modified] playlist
+// returns a snapshot ID that can be used to identify the (newly modified) playlist
 // version in future requests.
 //
-// See the docs for PlaylistReorderOptions for information on how the reordering
+// See the docs for [PlaylistReorderOptions] for information on how the reordering
 // works.
 //
-// Reordering tracks in the current user's public playlist requires ScopePlaylistModifyPublic.
+// Reordering tracks in the current user's public playlist requires [ScopePlaylistModifyPublic].
 // Reordering tracks in the user's private playlists (including collaborative playlists) requires
-// ScopePlaylistModifyPrivate.
+// [ScopePlaylistModifyPrivate].
 func (c *Client) ReorderPlaylistTracks(ctx context.Context, playlistID ID, opt PlaylistReorderOptions) (snapshotID string, err error) {
 	spotifyURL := fmt.Sprintf("%splaylists/%s/items", c.baseURL, playlistID)
 	j, err := json.Marshal(opt)
@@ -545,12 +551,13 @@ func (c *Client) ReorderPlaylistTracks(ctx context.Context, playlistID ID, opt P
 		return "", err
 	}
 
-	return result.SnapshotID, err
+	return result.SnapshotID, nil
 }
 
 // SetPlaylistImage replaces the image used to represent a playlist.
 // This action can only be performed by the owner of the playlist,
-// and requires ScopeImageUpload as well as ScopeModifyPlaylist{Public|Private}..
+// and requires [ScopeImageUpload] as well as [ScopeModifyPlaylistPublic] or
+// [ScopeModifyPlaylistPrivate].
 func (c *Client) SetPlaylistImage(ctx context.Context, playlistID ID, img io.Reader) error {
 	spotifyURL := fmt.Sprintf("%splaylists/%s/images", c.baseURL, playlistID)
 	// data flow:

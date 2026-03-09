@@ -17,9 +17,9 @@ type SimpleTrack struct {
 	Album   SimpleAlbum    `json:"album"`
 	Artists []SimpleArtist `json:"artists"`
 	// The disc number (usually 1 unless the album consists of more than one disc).
-	DiscNumber int `json:"disc_number"`
+	DiscNumber Numeric `json:"disc_number"`
 	// The length of the track, in milliseconds.
-	Duration int `json:"duration_ms"`
+	Duration Numeric `json:"duration_ms"`
 	// Whether or not the track has explicit lyrics.
 	// true => yes, it does; false => no, it does not.
 	Explicit bool `json:"explicit"`
@@ -36,8 +36,8 @@ type SimpleTrack struct {
 	// The number of the track.  If an album has several
 	// discs, the track number is the number on the specified
 	// DiscNumber.
-	TrackNumber int `json:"track_number"`
-	URI         URI `json:"uri"`
+	TrackNumber Numeric `json:"track_number"`
+	URI         URI     `json:"uri"`
 	// Type of the track
 	Type string `json:"type"`
 }
@@ -46,7 +46,7 @@ func (st SimpleTrack) String() string {
 	return fmt.Sprintf("TRACK<[%s] [%s]>", st.ID, st.Name)
 }
 
-// FullTrack provides extra track data in addition to what is provided by SimpleTrack.
+// FullTrack provides extra track data in addition to what is provided by [SimpleTrack].
 type FullTrack struct {
 	SimpleTrack
 	// The album on which the track appears. The album object includes a link in href to full information about the album.
@@ -54,17 +54,18 @@ type FullTrack struct {
 	// Known external IDs for the track.
 	ExternalIDs map[string]string `json:"external_ids"`
 
-	// IsPlayable defines if the track is playable. It's reported when the "market" parameter is passed to the tracks
-	// listing API.
-	// See: https://developer.spotify.com/documentation/general/guides/track-relinking-guide/
+	// IsPlayable is included when [Track Relinking] is applied, and reports if
+	// the track is playable. It's reported when the "market" parameter is
+	// passed to the tracks listing API.
+	//
+	// [Track Relinking]: https://developer.spotify.com/documentation/general/guides/track-relinking-guide/
 	IsPlayable *bool `json:"is_playable"`
 }
 
 // PlaylistTrack contains info about a track in a playlist.
 type PlaylistTrack struct {
-	// The date and time the track was added to the playlist.
-	// You can use the TimestampLayout constant to convert
-	// this field to a time.Time value.
+	// The date and time the track was added to the playlist. You can use
+	// [TimestampLayout] to convert this field to a [time.Time].
 	// Warning: very old playlists may not populate this value.
 	AddedAt string `json:"added_at"`
 	// The Spotify user who added the track to the playlist.
@@ -78,25 +79,25 @@ type PlaylistTrack struct {
 
 // SavedTrack provides info about a track saved to a user's account.
 type SavedTrack struct {
-	// The date and time the track was saved, represented as an ISO
-	// 8601 UTC timestamp with a zero offset (YYYY-MM-DDTHH:MM:SSZ).
-	// You can use the TimestampLayout constant to convert this to
-	// a time.Time value.
+	// The date and time the track was saved, represented as an ISO 8601 UTC
+	// timestamp with a zero offset (YYYY-MM-DDTHH:MM:SSZ). You can use
+	// [TimestampLayout] to convert this to a [time.Time].
 	AddedAt   string `json:"added_at"`
 	FullTrack `json:"track"`
 }
 
-// TimeDuration returns the track's duration as a time.Duration value.
+// TimeDuration returns the track's duration as a [time.Duration] value.
 func (t *SimpleTrack) TimeDuration() time.Duration {
 	return time.Duration(t.Duration) * time.Millisecond
 }
 
 // GetTrack gets Spotify catalog information for
-// a single track identified by its unique Spotify ID.
+// a [single track] identified by its unique [Spotify ID].
 //
-// API Doc: https://developer.spotify.com/documentation/web-api/reference/tracks/get-track/
+// Supported options: [Market].
 //
-// Supported options: Market
+// [single track]: https://developer.spotify.com/documentation/web-api/reference/get-track
+// [Spotify ID]: https://developer.spotify.com/documentation/web-api/#spotify-uris-and-ids
 func (c *Client) GetTrack(ctx context.Context, id ID, opts ...RequestOption) (*FullTrack, error) {
 	spotifyURL := c.baseURL + "tracks/" + string(id)
 

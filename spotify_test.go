@@ -2,14 +2,17 @@ package spotify
 
 import (
 	"context"
-	"golang.org/x/oauth2"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"golang.org/x/oauth2"
 )
 
 func testClient(code int, body io.Reader, validators ...func(*http.Request)) (*Client, *httptest.Server) {
@@ -104,4 +107,67 @@ func TestClient_Token(t *testing.T) {
 			t.Errorf("Should throw error: %s", "oauth2: token expired and refresh token is not set")
 		}
 	})
+}
+
+func TestDecode429Error(t *testing.T) {
+	resp := &http.Response{
+		StatusCode: http.StatusTooManyRequests,
+		Header:     http.Header{"Retry-After": []string{"2"}},
+		Body:       io.NopCloser(strings.NewReader(`Too many requests`)),
+	}
+
+	err := decodeError(resp)
+	if err == nil {
+		t.Fatal("Expected error")
+	}
+	if err.Error() != "spotify: Too many requests [429]" {
+		t.Error("Unexpected error message:", err.Error())
+	}
+	const wantSTatus = http.StatusTooManyRequests
+	var gotStatus int
+	var statusErr interface{ HTTPStatus() int }
+	if errors.As(err, &statusErr) {
+		gotStatus = statusErr.HTTPStatus()
+	}
+	if gotStatus != wantSTatus {
+		t.Errorf("Expected status %d, got %d", wantSTatus, gotStatus)
+	}
+}
+
+func TestRateLimitExceededReportsRetryAfter(t *testing.T) {
+	t.Parallel()
+	const retryAfter = 2
+
+	handlers := []http.HandlerFunc{
+		// first attempt fails
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Retry-After", strconv.Itoa(retryAfter))
+			w.WriteHeader(http.StatusTooManyRequests)
+			_, _ = io.WriteString(w, `{ "error": { "message": "slow down", "status": 429 } }`)
+		}),
+		// next attempt succeeds
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, _ = io.WriteString(w, `{ "id": "test" }`)
+		}),
+	}
+
+	i := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handlers[i](w, r)
+		i++
+	}))
+	defer server.Close()
+
+	client := &Client{http: http.DefaultClient, baseURL: server.URL + "/"}
+	_, err := client.GetAlbum(context.Background(), "test")
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	var spotifyError Error
+	if !errors.As(err, &spotifyError) {
+		t.Fatalf("expected a spotify error, got %T", err)
+	}
+	if retryAfter*time.Second-time.Until(spotifyError.RetryAfter) > time.Second {
+		t.Error("expected RetryAfter value")
+	}
 }

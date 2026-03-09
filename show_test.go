@@ -40,3 +40,20 @@ func TestGetShowEpisodes(t *testing.T) {
 		t.Error("Invalid data", len(r.Episodes))
 	}
 }
+
+func TestGetEpisode(t *testing.T) {
+	c, s := testClientFile(http.StatusOK, "test_data/get_episode.txt")
+	defer s.Close()
+
+	id := "2DSKnz9Hqm1tKimcXqcMJD"
+	r, err := c.GetEpisode(context.Background(), id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.ID.String() != id {
+		t.Error("Invalid data:", r.ID)
+	}
+	if r.Type != "episode" {
+		t.Error("Invalid data:", r.ID)
+	}
+}

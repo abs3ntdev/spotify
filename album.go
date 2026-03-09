@@ -12,14 +12,18 @@ import (
 type SimpleAlbum struct {
 	// The name of the album.
 	Name string `json:"name"`
-	// A slice of SimpleArtists
+	// A slice of [SimpleArtist].
 	Artists []SimpleArtist `json:"artists"`
 	// The type of the album: one of "album",
 	// "single", or "compilation".
 	AlbumType string `json:"album_type"`
-	// The SpotifyID for the album.
+	// The [Spotify ID] for the album.
+	//
+	// [Spotify ID]: https://developer.spotify.com/documentation/web-api/concepts/spotify-uris-ids
 	ID ID `json:"id"`
-	// The SpotifyURI for the album.
+	// The [Spotify URI] for the album.
+	//
+	// [Spotify URI]: https://developer.spotify.com/documentation/web-api/concepts/spotify-uris-ids
 	URI URI `json:"uri"`
 	// A link to the Web API endpoint providing full
 	// details of the album.
@@ -31,16 +35,18 @@ type SimpleAlbum struct {
 	ExternalURLs map[string]string `json:"external_urls"`
 	// The date the album was first released.  For example, "1981-12-15".
 	// Depending on the ReleaseDatePrecision, it might be shown as
-	// "1981" or "1981-12". You can use ReleaseDateTime to convert this
-	// to a time.Time value.
+	// "1981" or "1981-12". You can use [SimpleAlbum.ReleaseDateTime] to convert
+	// this to a [time.Time] value.
 	ReleaseDate string `json:"release_date"`
 	// The precision with which ReleaseDate value is known: "year", "month", or "day"
 	ReleaseDatePrecision string `json:"release_date_precision"`
+	// The number of tracks on the album.
+	TotalTracks Numeric `json:"total_tracks"`
 }
 
-// ReleaseDateTime converts the album's ReleaseDate to a time.TimeValue.
+// ReleaseDateTime converts [SimpleAlbum.ReleaseDate] to a [time.Time].
 // All of the fields in the result may not be valid.  For example, if
-// ReleaseDatePrecision is "month", then only the month and year
+// [SimpleAlbum.ReleaseDatePrecision] is "month", then only the month and year
 // (but not the day) of the result are valid.
 func (s *SimpleAlbum) ReleaseDateTime() time.Time {
 	if s.ReleaseDatePrecision == "day" {
@@ -65,7 +71,7 @@ type Copyright struct {
 	Type string `json:"type"`
 }
 
-// FullAlbum provides extra album data in addition to the data provided by SimpleAlbum.
+// FullAlbum provides extra album data in addition to the data provided by [SimpleAlbum].
 type FullAlbum struct {
 	SimpleAlbum
 	Copyrights  []Copyright       `json:"copyrights"`
@@ -74,18 +80,19 @@ type FullAlbum struct {
 	ExternalIDs map[string]string `json:"external_ids"`
 }
 
-// SavedAlbum provides info about an album saved to an user's account.
+// SavedAlbum provides info about an album saved to a user's account.
 type SavedAlbum struct {
 	// The date and time the track was saved, represented as an ISO
 	// 8601 UTC timestamp with a zero offset (YYYY-MM-DDTHH:MM:SSZ).
-	// You can use the TimestampLayout constant to convert this to
-	// a time.Time value.
+	// You can use [TimestampLayout] to convert this to a [time.Time] value.
 	AddedAt   string `json:"added_at"`
 	FullAlbum `json:"album"`
 }
 
-// GetAlbum gets Spotify catalog information for a single album, given its Spotify ID.
-// Supported options: Market
+// GetAlbum gets Spotify catalog information for a single album, given its
+// [Spotify ID]. Supported options: [Market].
+//
+// [Spotify ID]: https://developer.spotify.com/documentation/web-api/concepts/spotify-uris-ids
 func (c *Client) GetAlbum(ctx context.Context, id ID, opts ...RequestOption) (*FullAlbum, error) {
 	spotifyURL := fmt.Sprintf("%salbums/%s", c.baseURL, id)
 
@@ -142,11 +149,13 @@ func (at AlbumType) encode() string {
 	return strings.Join(types, ",")
 }
 
-// GetAlbumTracks gets the tracks for a particular album.
+// GetAlbumTracks gets the [tracks] for a particular album.
 // If you only care about the tracks, this call is more efficient
-// than GetAlbum.
+// than [GetAlbum].
 //
-// Supported Options: Market, Limit, Offset
+// Supported Options: [Market], [Limit], [Offset].
+//
+// [tracks]: https://developer.spotify.com/documentation/web-api/reference/get-an-albums-tracks
 func (c *Client) GetAlbumTracks(ctx context.Context, id ID, opts ...RequestOption) (*SimpleTrackPage, error) {
 	spotifyURL := fmt.Sprintf("%salbums/%s/tracks", c.baseURL, id)
 

@@ -56,7 +56,7 @@ func TestCurrentUsersTracks(t *testing.T) {
 		t.Errorf("Expect 3 results, got %d\n", tracks.Total)
 		return
 	}
-	if len(tracks.Tracks) != tracks.Total {
+	if len(tracks.Tracks) != int(tracks.Total) {
 		t.Error("Didn't get expected number of results")
 		return
 	}
@@ -86,7 +86,7 @@ func TestCurrentUsersAlbums(t *testing.T) {
 		t.Errorf("Expect 2 results, got %d\n", albums.Total)
 		return
 	}
-	if len(albums.Albums) != albums.Total {
+	if len(albums.Albums) != int(albums.Total) {
 		t.Error("Didn't get expected number of results")
 		return
 	}
@@ -128,7 +128,7 @@ func TestCurrentUsersPlaylists(t *testing.T) {
 		Name        string
 		Description string
 		Public      bool
-		TrackCount  uint
+		TrackCount  int
 	}{
 		{"Core", "", true, 3},
 		{"Black/Atmo/Prog ?", "This is kinda fuzzy", true, 10},
@@ -147,7 +147,7 @@ func TestCurrentUsersPlaylists(t *testing.T) {
 		if p.IsPublic != tests[i].Public {
 			t.Errorf("Expected public to be %#v, got %#v\n", tests[i].Public, p.IsPublic)
 		}
-		if p.Items.Total != tests[i].TrackCount {
+		if int(p.Items.Total) != tests[i].TrackCount {
 			t.Errorf("Expected %d tracks, got %d\n", tests[i].TrackCount, p.Items.Total)
 		}
 	}
@@ -203,7 +203,7 @@ func TestUsersFollowedArtists(t *testing.T) {
 		t.Fatal(err)
 	}
 	exp := 20
-	if artists.Limit != exp {
+	if int(artists.Limit) != exp {
 		t.Errorf("Expected limit %d, got %d\n", exp, artists.Limit)
 	}
 	if a := artists.Cursor.After; a != "0aV6DOiouImYTqrR5YlIqx" {
@@ -249,7 +249,7 @@ func TestCurrentUsersTopArtists(t *testing.T) {
 		t.Errorf("Expected total 10, got %d\n", artists.Total)
 		return
 	}
-	if len(artists.Artists) != artists.Total {
+	if len(artists.Artists) != int(artists.Total) {
 		t.Error("Didn't get expected number of results")
 		return
 	}
@@ -278,7 +278,7 @@ func TestCurrentUsersTopTracks(t *testing.T) {
 		t.Errorf("Expected total 380, got %d\n", tracks.Total)
 		return
 	}
-	if len(tracks.Tracks) != tracks.Limit {
+	if len(tracks.Tracks) != int(tracks.Limit) {
 		t.Errorf("Didn't get expected number of results")
 		return
 	}

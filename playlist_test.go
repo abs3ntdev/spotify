@@ -5,9 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 )
@@ -26,7 +25,7 @@ func TestFeaturedPlaylists(t *testing.T) {
 	if msg != "New Music Friday!" {
 		t.Errorf("Want 'Enjoy a mellow afternoon.', got'%s'\n", msg)
 	}
-	if p.Playlists == nil || len(p.Playlists) == 0 {
+	if len(p.Playlists) == 0 {
 		t.Fatal("Empty playlists result")
 	}
 	expected := "New Music Friday Sweden"
@@ -37,7 +36,6 @@ func TestFeaturedPlaylists(t *testing.T) {
 	if desc := p.Playlists[0].Description; desc != expected {
 		t.Errorf("Want '%s', got '%s'\n", expected, desc)
 	}
-
 }
 
 func TestFeaturedPlaylistsExpiredToken(t *testing.T) {
@@ -394,7 +392,7 @@ func TestAddTracksToPlaylist(t *testing.T) {
 
 func TestRemoveTracksFromPlaylist(t *testing.T) {
 	client, server := testClientString(http.StatusOK, `{ "snapshot_id" : "JbtmHBDBAYu3/bt8BOXKjzKx3i0b6LCa/wVjyl6qQ2Yf6nFXkbmzuEa+ZI/U1yF+" }`, func(req *http.Request) {
-		requestBody, err := ioutil.ReadAll(req.Body)
+		requestBody, err := io.ReadAll(req.Body)
 		if err != nil {
 			t.Fatal("Could not read request body:", err)
 		}
@@ -434,7 +432,7 @@ func TestRemoveTracksFromPlaylist(t *testing.T) {
 
 func TestRemoveTracksFromPlaylistOpt(t *testing.T) {
 	client, server := testClientString(http.StatusOK, `{ "snapshot_id" : "JbtmHBDBAYu3/bt8BOXKjzKx3i0b6LCa/wVjyl6qQ2Yf6nFXkbmzuEa+ZI/U1yF+" }`, func(req *http.Request) {
-		requestBody, err := ioutil.ReadAll(req.Body)
+		requestBody, err := io.ReadAll(req.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -524,7 +522,7 @@ func TestClient_ReplacePlaylistItems(t *testing.T) {
 				items:      []URI{"spotify:track:track1", "spotify:track:track2"},
 			},
 			want: want{
-				err: "spotify: HTTP 403: Forbidden (body empty)",
+				err: "spotify: Forbidden [403]",
 			},
 		},
 	}
@@ -533,7 +531,7 @@ func TestClient_ReplacePlaylistItems(t *testing.T) {
 			var gotRequestBody string
 
 			c, server := testClientString(tt.clientFields.httpCode, tt.clientFields.body, func(request *http.Request) {
-				b, err := ioutil.ReadAll(request.Body)
+				b, err := io.ReadAll(request.Body)
 				defer request.Body.Close()
 				if err != nil {
 					t.Error(err)
@@ -632,8 +630,8 @@ func TestReorderPlaylistRequest(t *testing.T) {
 		RangeStart:   3,
 		InsertBefore: 8,
 	})
-	if err == nil || !strings.Contains(err.Error(), "HTTP 404: Not Found") {
-		t.Errorf("Expected error 'spotify: HTTP 404: Not Found (body empty)', got %v", err)
+	if want := "spotify: Not Found [404]"; err == nil || err.Error() != want {
+		t.Errorf("Expected error: want %v, got %v", want, err)
 	}
 }
 
@@ -645,7 +643,7 @@ func TestSetPlaylistImage(t *testing.T) {
 		if req.Method != "PUT" {
 			t.Errorf("expected a PUT, got a %s\n", req.Method)
 		}
-		body, err := ioutil.ReadAll(req.Body)
+		body, err := io.ReadAll(req.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
